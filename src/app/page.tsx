@@ -116,7 +116,7 @@ export default function WieIsMijnWaarnemerHomepage() {
             <div className="absolute bottom-[15%] left-[15%] h-[200px] w-[200px] rounded-full bg-[#f3eaff]/60" />
           </div>
 
-          <div className="relative mx-auto flex w-full max-w-[1400px] flex-1 flex-col justify-center px-4 pb-12 pt-28 sm:px-6 sm:pb-16 sm:pt-32 md:pt-36 lg:px-10 lg:py-0">
+          <div className="relative mx-auto flex w-full max-w-[1400px] flex-1 flex-col justify-center px-4 pb-[48vh] pt-28 sm:px-6 sm:pb-[50vh] sm:pt-32 md:pt-36 lg:px-10 lg:py-0 lg:pb-0">
             <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[1.35fr_1fr] lg:gap-16">
               {/* Content */}
               <div className="flex flex-col text-center lg:text-left">
@@ -142,7 +142,7 @@ export default function WieIsMijnWaarnemerHomepage() {
                 </p>
 
                 <div className="mx-auto mt-8 w-full max-w-[760px] lg:mx-0">
-                  <div className="flex items-center gap-2 rounded-2xl border border-white/80 bg-white p-2 shadow-[0_12px_40px_-8px_rgba(15,23,40,0.18)] ring-1 ring-black/5 transition-all focus-within:shadow-[0_16px_50px_-8px_rgba(53,133,255,0.25)] focus-within:ring-[#3585ff]/30">
+                  <div className="flex flex-col gap-2 rounded-2xl border border-white/80 bg-white p-2 shadow-[0_12px_40px_-8px_rgba(15,23,40,0.18)] ring-1 ring-black/5 transition-all focus-within:shadow-[0_16px_50px_-8px_rgba(53,133,255,0.25)] focus-within:ring-[#3585ff]/30 lg:flex-row lg:items-center">
                     <div className="flex flex-1 items-center pl-3">
                       <svg className="mr-3 h-5 w-5 shrink-0 text-[#9ca3af]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -153,13 +153,13 @@ export default function WieIsMijnWaarnemerHomepage() {
                         className="w-full bg-transparent py-3 text-[15px] text-[#0f1728] placeholder:text-[#9ca3af] outline-none"
                       />
                     </div>
-                    <button className="shrink-0 rounded-xl bg-[#1d1d1b] px-6 py-3.5 text-[14px] font-medium text-white transition-colors duration-200 hover:bg-[#1d1d1b]/85">
+                    <button className="w-full shrink-0 rounded-xl bg-[#1d1d1b] px-6 py-3.5 text-[14px] font-medium text-white transition-colors duration-200 hover:bg-[#1d1d1b]/85 lg:w-auto">
                       Zoek waarnemer
                     </button>
                   </div>
                 </div>
 
-                <div className="mx-auto mt-10 flex items-center gap-4 lg:mx-0">
+                <div className="mx-auto mt-6 flex items-center gap-4 lg:mx-0">
                   <div className="flex -space-x-2.5">
                     <div className="h-10 w-10 rounded-full border-[2.5px] border-white bg-[url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80')] bg-cover bg-center shadow-[0_2px_8px_rgba(15,23,40,0.08)]" />
                     <div className="h-10 w-10 rounded-full border-[2.5px] border-white bg-[url('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80')] bg-cover bg-center shadow-[0_2px_8px_rgba(15,23,40,0.08)]" />
@@ -184,27 +184,19 @@ export default function WieIsMijnWaarnemerHomepage() {
                 </div>
               </div>
 
-              {/* Image — alleen mobile/tablet (in flow) */}
-              <div className="relative flex items-center justify-center px-4 sm:px-6 lg:hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/banner.png"
-                  alt="Wieismijnwaarnemer"
-                  className="block max-h-[55vh] w-auto object-contain"
-                  loading="eager"
-                />
-              </div>
             </div>
           </div>
 
-          {/* Image — desktop, absolute t.o.v. de card, bottom aligned */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/banner.png"
-            alt="Wieismijnwaarnemer"
-            className="pointer-events-none absolute bottom-0 right-[5%] z-10 hidden h-auto max-h-[calc(100%-6rem)] w-auto object-contain lg:block xl:right-[8%]"
-            loading="eager"
-          />
+          {/* Image — absolute t.o.v. de card, bottom aligned (alle schermformaten) */}
+          <div className="pointer-events-none absolute bottom-0 left-1/2 z-10 flex -translate-x-1/2 justify-center lg:left-auto lg:right-[5%] lg:translate-x-0 xl:right-[8%]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/banner.png"
+              alt="Wieismijnwaarnemer"
+              className="block h-auto max-h-[42vh] w-auto object-contain sm:max-h-[44vh] lg:max-h-[calc(100vh-12rem)]"
+              loading="eager"
+            />
+          </div>
         </div>
       </section>
 
