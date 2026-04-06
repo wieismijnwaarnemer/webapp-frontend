@@ -45,6 +45,8 @@ export default function AanmeldenPage() {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpError, setOtpError] = useState(false);
   const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
   const [partnerQuery, setPartnerQuery] = useState("");
   const [weekSchedule, setWeekSchedule] = useState<Record<string, DaySchedule>>({ ...DEFAULT_SCHEDULE });
@@ -213,47 +215,78 @@ export default function AanmeldenPage() {
                     Code verstuurd naar <span className="font-semibold">{email}</span>
                   </div>
 
-                  <label className="mt-4 block text-[15px] font-medium text-[#0a0c10] mb-3">Voer de 6-cijferige code in</label>
-                  <div className="flex justify-center gap-2.5">
-                    {otp.map((digit, i) => (
-                      <input
-                        key={i}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        value={digit}
-                        autoFocus={i === 0}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, "");
-                          const newOtp = [...otp];
-                          newOtp[i] = val;
-                          setOtp(newOtp);
-                          if (val && i < 5) {
-                            const next = e.target.nextElementSibling as HTMLInputElement | null;
-                            next?.focus();
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Backspace" && !otp[i] && i > 0) {
-                            const prev = (e.target as HTMLInputElement).previousElementSibling as HTMLInputElement | null;
-                            prev?.focus();
-                          }
-                        }}
-                        className="h-14 w-12 rounded-xl border-2 border-[#e6ebf3] bg-white text-center text-[22px] font-semibold text-[#101114] outline-none transition-colors focus:border-[#3585ff] focus:shadow-[0_0_0_3px_rgba(53,133,255,0.1)]"
-                      />
-                    ))}
-                  </div>
-                  <p className="mt-3 text-center text-[13px] text-[#9aa5b4]">
-                    Demo: vul willekeurige cijfers in
-                  </p>
+                  {!otpVerified && (
+                    <>
+                      <label className="mt-4 block text-[15px] font-medium text-[#0a0c10] mb-3">Voer de 6-cijferige code in</label>
+                      <div className="flex justify-center gap-2.5">
+                        {otp.map((digit, i) => (
+                          <input
+                            key={i}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digit}
+                            autoFocus={i === 0}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, "");
+                              const newOtp = [...otp];
+                              newOtp[i] = val;
+                              setOtp(newOtp);
+                              setOtpError(false);
+                              if (val && i < 5) {
+                                const next = e.target.nextElementSibling as HTMLInputElement | null;
+                                next?.focus();
+                              }
+                              // Auto-verify when all 6 digits filled
+                              if (val && i === 5) {
+                                const code = [...newOtp].join("");
+                                if (code === "111111") {
+                                  setOtpVerified(true);
+                                } else {
+                                  setOtpError(true);
+                                }
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Backspace" && !otp[i] && i > 0) {
+                                const prev = (e.target as HTMLInputElement).previousElementSibling as HTMLInputElement | null;
+                                prev?.focus();
+                              }
+                            }}
+                            className={`h-14 w-12 rounded-xl border-2 bg-white text-center text-[22px] font-semibold text-[#101114] outline-none transition-colors focus:shadow-[0_0_0_3px_rgba(53,133,255,0.1)] ${
+                              otpError ? "border-red-400 focus:border-red-500" : "border-[#e6ebf3] focus:border-[#3585ff]"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      {otpError && (
+                        <p className="mt-3 text-center text-[13px] text-red-500 font-medium">
+                          Onjuiste code. Probeer opnieuw.
+                        </p>
+                      )}
+                      <p className="mt-3 text-center text-[13px] text-[#9aa5b4]">
+                        Demo: gebruik code <span className="font-mono font-semibold text-[#101114]">111111</span>
+                      </p>
+                    </>
+                  )}
 
-                  <button
-                    onClick={() => setStep(2)}
-                    disabled={otp.filter((d) => d).length < 6}
-                    className="mt-6 w-full rounded-xl bg-[#3585ff] py-4 text-[17px] font-semibold text-white shadow-[0_10px_25px_rgba(53,133,255,0.25)] transition hover:translate-y-[-1px] disabled:opacity-40 disabled:hover:translate-y-0"
-                  >
-                    Verifieer →
-                  </button>
+                  {otpVerified && (
+                    <>
+                      <div className="mt-4 flex items-center justify-center gap-3 rounded-xl bg-[#e8f5e9] px-4 py-4">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500 text-white text-sm">
+                          ✓
+                        </div>
+                        <span className="text-[16px] font-semibold text-green-800">Email geverifieerd!</span>
+                      </div>
+
+                      <button
+                        onClick={() => setStep(2)}
+                        className="mt-6 w-full rounded-xl bg-[#3585ff] py-4 text-[17px] font-semibold text-white shadow-[0_10px_25px_rgba(53,133,255,0.25)] transition hover:translate-y-[-1px]"
+                      >
+                        Ga verder →
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -317,13 +350,29 @@ export default function AanmeldenPage() {
                 </div>
 
                 {/* Zoek andere praktijken */}
-                <div className="mt-4 rounded-xl border border-dashed border-[#d7e7ff] bg-[#f7fbff] p-4">
-                  <p className="text-[14px] font-medium text-[#4c5361] mb-3">
-                    Staat je waarnemer er niet bij? Zoek hieronder:
-                  </p>
-                  <div className="relative">
-                    <div className="flex items-center rounded-lg border border-[#e6ebf3] bg-white px-4 py-3 focus-within:border-[#3585ff] transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4 text-[#9aa5b4]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <div className="mt-4 rounded-xl border border-[#e6ebf3] bg-white overflow-hidden">
+                  <div className="p-4 pb-3">
+                    <p className="text-[15px] font-semibold text-[#0a0c10]">
+                      Andere praktijk toevoegen
+                    </p>
+                    <p className="mt-1 text-[13px] text-[#9aa5b4]">
+                      Staat je waarnemer er niet bij? Zoek op naam of postcode.
+                    </p>
+                  </div>
+
+                  {/* Map placeholder */}
+                  <div className="mx-4 mb-3 flex h-[140px] items-center justify-center rounded-xl bg-[#f0f7ff] border border-[#d7e7ff]">
+                    <div className="text-center">
+                      <div className="text-3xl">📍</div>
+                      <div className="mt-1 text-[13px] font-medium text-[#3585ff]">Purmerend en omgeving</div>
+                      <div className="text-[11px] text-[#9aa5b4]">Kaart wordt later toegevoegd</div>
+                    </div>
+                  </div>
+
+                  {/* Zoekbalk */}
+                  <div className="relative px-4 pb-4">
+                    <div className="flex items-center rounded-xl border border-[#e6ebf3] bg-[#f7fbff] px-4 py-3 focus-within:border-[#3585ff] focus-within:bg-white transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="mr-2.5 h-4 w-4 text-[#9aa5b4]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                       <input
@@ -344,8 +393,8 @@ export default function AanmeldenPage() {
                            p.postcode.toLowerCase().replace(/\s/g, "").includes(partnerQuery.toLowerCase().replace(/\s/g, "")))
                       );
                       if (searchResults.length === 0) return (
-                        <div className="mt-2 rounded-lg bg-white px-4 py-3 text-[13px] text-[#9aa5b4]">
-                          Geen praktijken gevonden
+                        <div className="mt-2 rounded-xl border border-[#e6ebf3] bg-white px-4 py-3 text-[13px] text-[#9aa5b4]">
+                          Geen praktijken gevonden voor &ldquo;{partnerQuery}&rdquo;
                         </div>
                       );
                       return (
@@ -361,13 +410,13 @@ export default function AanmeldenPage() {
                                   );
                                   setPartnerQuery("");
                                 }}
-                                className={`flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition ${
+                                className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
                                   isSelected
                                     ? "border-[#3585ff] bg-[#f0f7ff]"
                                     : "border-[#e6ebf3] bg-white hover:border-[#d7e7ff]"
                                 }`}
                               >
-                                <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                                <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
                                   isSelected ? "border-[#3585ff] bg-[#3585ff]" : "border-[#d0d5dd]"
                                 }`}>
                                   {isSelected && (
@@ -387,7 +436,6 @@ export default function AanmeldenPage() {
                       );
                     })()}
                   </div>
-
                 </div>
               </div>
 
@@ -607,13 +655,18 @@ export default function AanmeldenPage() {
 
             {/* CSV upload */}
             <div className="mt-6">
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-[#d7e7ff] bg-[#f7fbff] px-4 py-3 transition hover:border-[#3585ff]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#3585ff]/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <span className="text-[13px] text-[#4c5361]">
-                  Of <span className="font-medium text-[#3585ff]">upload een rooster</span> (CSV/Excel)
-                </span>
+              <label className="flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed border-[#d7e7ff] bg-[#f7fbff] px-5 py-5 transition hover:border-[#3585ff] hover:bg-[#f0f7ff]">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white border border-[#e6ebf3] text-xl shadow-sm">
+                  📄
+                </div>
+                <div>
+                  <div className="text-[15px] font-semibold text-[#101114]">
+                    Heb je al een rooster? Upload het hier
+                  </div>
+                  <div className="mt-0.5 text-[13px] text-[#9aa5b4]">
+                    CSV of Excel (.xlsx) — we vullen de tijden automatisch in
+                  </div>
+                </div>
                 <input type="file" accept=".csv,.xlsx" className="hidden" />
               </label>
             </div>
@@ -663,14 +716,25 @@ export default function AanmeldenPage() {
 
               {selectedPartners.length > 0 && (
                 <div className="mt-3 space-y-2">
-                  {selectedPartners.map((id) => {
+                  {selectedPartners.map((id, index) => {
                     const p = getPractice(id);
                     if (!p) return null;
                     return (
-                      <div key={id} className="rounded-xl border-2 border-[#3585ff]/20 bg-[#f0f7ff] p-5">
-                        <div className="text-[14px] font-medium text-[#3585ff]">Waarnemer</div>
-                        <div className="mt-1 text-[20px] font-semibold text-[#101114]">{p.naam}</div>
-                        <div className="mt-1 text-[15px] text-[#4c5361]">{p.adres} &middot; {p.telefoon}</div>
+                      <div key={id} className="flex items-start gap-4 rounded-xl border-2 border-[#3585ff]/20 bg-[#f0f7ff] p-5">
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[13px] font-bold ${
+                          index === 0
+                            ? "bg-[#3585ff] text-white"
+                            : index === 1
+                              ? "bg-[#dbeafe] text-[#3585ff]"
+                              : "bg-[#e6ebf3] text-[#9aa5b4]"
+                        }`}>
+                          {index + 1}e
+                        </div>
+                        <div>
+                          <div className="text-[14px] font-medium text-[#3585ff]">{index + 1}e waarnemer</div>
+                          <div className="mt-1 text-[20px] font-semibold text-[#101114]">{p.naam}</div>
+                          <div className="mt-1 text-[15px] text-[#4c5361]">{p.adres} &middot; {p.telefoon}</div>
+                        </div>
                       </div>
                     );
                   })}
