@@ -6,7 +6,7 @@ export default function WieIsMijnWaarnemerHomepage() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10);
+    const onScroll = () => setScrolled(window.scrollY > 80);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
@@ -42,7 +42,7 @@ export default function WieIsMijnWaarnemerHomepage() {
         <nav
           className={`transition-all duration-300 ${
             scrolled
-              ? "bg-white/80 shadow-[0_1px_0_rgba(0,0,0,0.06)] backdrop-blur-xl"
+              ? "bg-white/70 backdrop-blur-2xl"
               : "bg-transparent"
           }`}
         >
@@ -117,12 +117,18 @@ export default function WieIsMijnWaarnemerHomepage() {
           </div>
 
           <div className="relative mx-auto flex w-full max-w-[1400px] flex-1 flex-col justify-center px-4 pb-12 pt-28 sm:px-6 sm:pb-16 sm:pt-32 md:pt-36 lg:px-10 lg:py-0">
-            <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-2 lg:gap-12">
+            <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[1.35fr_1fr] lg:gap-16">
               {/* Content */}
               <div className="flex flex-col text-center lg:text-left">
-                <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3.5 py-1.5 text-[12px] font-medium text-[#4b5563] backdrop-blur lg:mx-0">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#3585ff]" />
-                  Het waarnemer-platform van Nederland
+                <div className="inline-flex w-fit items-center gap-2.5 self-center rounded-full bg-white/60 py-1.5 pl-1.5 pr-4 shadow-[0_1px_2px_rgba(15,23,40,0.04),0_8px_24px_-8px_rgba(15,23,40,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md lg:self-start">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#3585ff] to-[#5b9fff] text-white shadow-[0_2px_6px_rgba(53,133,255,0.35)]">
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                  <span className="text-[12.5px] font-medium tracking-tight text-[#1d1d1b]">
+                    Het waarnemer-platform van Nederland
+                  </span>
                 </div>
 
                 <h1 className="mt-6 text-[1.75rem] font-semibold leading-tight tracking-[-0.035em] text-[#0f1728] sm:text-[2rem] md:text-3xl lg:text-4xl xl:text-5xl">
@@ -135,31 +141,46 @@ export default function WieIsMijnWaarnemerHomepage() {
                   afwezig, gesloten of niet bereikbaar is.
                 </p>
 
-                <div className="mx-auto mt-6 flex flex-col items-center gap-4 sm:mt-8 sm:flex-row lg:mx-0 lg:items-start">
-                  <div className="relative flex w-full items-center rounded-full border border-[#e5e7eb] bg-white px-4 py-3 transition-colors focus-within:border-[#3585ff] sm:max-w-[320px]">
-                    <svg className="mr-2.5 h-4 w-4 shrink-0 text-[#9ca3af]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder="Postcode of praktijknaam..."
-                      className="w-full bg-transparent text-[14px] text-[#0f1728] placeholder:text-[#9ca3af] outline-none"
-                    />
+                <div className="mx-auto mt-8 w-full max-w-[760px] lg:mx-0">
+                  <div className="flex items-center gap-2 rounded-2xl border border-white/80 bg-white p-2 shadow-[0_12px_40px_-8px_rgba(15,23,40,0.18)] ring-1 ring-black/5 transition-all focus-within:shadow-[0_16px_50px_-8px_rgba(53,133,255,0.25)] focus-within:ring-[#3585ff]/30">
+                    <div className="flex flex-1 items-center pl-3">
+                      <svg className="mr-3 h-5 w-5 shrink-0 text-[#9ca3af]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="Postcode of praktijknaam..."
+                        className="w-full bg-transparent py-3 text-[15px] text-[#0f1728] placeholder:text-[#9ca3af] outline-none"
+                      />
+                    </div>
+                    <button className="shrink-0 rounded-xl bg-[#1d1d1b] px-6 py-3.5 text-[14px] font-medium text-white transition-colors duration-200 hover:bg-[#1d1d1b]/85">
+                      Zoek waarnemer
+                    </button>
                   </div>
-                  <button className="rounded-full bg-[#3585ff] px-6 py-3 text-sm font-medium text-white shadow-[0_4px_14px_rgba(53,133,255,0.3)] transition-all hover:shadow-[0_6px_20px_rgba(53,133,255,0.4)] sm:text-base">
-                    Zoek waarnemer
-                  </button>
                 </div>
 
-                <div className="mx-auto mt-8 flex items-center gap-3 lg:mx-0">
-                  <div className="flex -space-x-2">
-                    <div className="h-8 w-8 rounded-full border-2 border-white bg-[url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80')] bg-cover bg-center shadow-sm" />
-                    <div className="h-8 w-8 rounded-full border-2 border-white bg-[url('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80')] bg-cover bg-center shadow-sm" />
-                    <div className="h-8 w-8 rounded-full border-2 border-white bg-[url('https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80')] bg-cover bg-center shadow-sm" />
+                <div className="mx-auto mt-10 flex items-center gap-4 lg:mx-0">
+                  <div className="flex -space-x-2.5">
+                    <div className="h-10 w-10 rounded-full border-[2.5px] border-white bg-[url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80')] bg-cover bg-center shadow-[0_2px_8px_rgba(15,23,40,0.08)]" />
+                    <div className="h-10 w-10 rounded-full border-[2.5px] border-white bg-[url('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80')] bg-cover bg-center shadow-[0_2px_8px_rgba(15,23,40,0.08)]" />
+                    <div className="h-10 w-10 rounded-full border-[2.5px] border-white bg-[url('https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80')] bg-cover bg-center shadow-[0_2px_8px_rgba(15,23,40,0.08)]" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border-[2.5px] border-white bg-gradient-to-br from-[#3585ff] to-[#5b9fff] text-[11px] font-semibold text-white shadow-[0_2px_8px_rgba(53,133,255,0.25)]">
+                      10k+
+                    </div>
                   </div>
-                  <p className="text-[13px] text-[#6b7280]">
-                    <span className="font-semibold text-[#0f1728]">10.000+</span> patiënten gingen je voor
-                  </p>
+                  <div className="flex flex-col items-start gap-0.5">
+                    <div className="flex items-center gap-0.5 text-[#fbbf24]">
+                      {[...Array(5)].map((_, i) => (
+                        <svg key={i} className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.922-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.175 0l-3.37 2.448c-.784.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.05 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z" />
+                        </svg>
+                      ))}
+                      <span className="ml-1.5 text-[12px] font-semibold text-[#0f1728]">4.9</span>
+                    </div>
+                    <p className="text-[12px] text-[#6b7280]">
+                      Vertrouwd door <span className="font-semibold text-[#0f1728]">10.000+</span> patiënten
+                    </p>
+                  </div>
                 </div>
               </div>
 
