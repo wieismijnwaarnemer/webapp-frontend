@@ -73,6 +73,7 @@ export function getDutchHolidays(year: number): Holiday[] {
     { name: "Tweede Pinksterdag", date: addDays(easterIso, 50), isPublicHoliday: true },
     { name: "Eerste Kerstdag", date: toIso(year, 12, 25), isPublicHoliday: true },
     { name: "Tweede Kerstdag", date: toIso(year, 12, 26), isPublicHoliday: true },
+    { name: "Oudejaarsdag", date: toIso(year, 12, 31), isPublicHoliday: false },
   ];
 }
 
