@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { zoekPraktijken, type Praktijk } from "@/lib/praktijk-search";
 import { praktijken as allPraktijken } from "@/data/praktijken";
+import { getDutchHolidays, formatHolidayDate } from "@/lib/holidays";
 
 type NavKey = "waarneming" | "praktijk";
 
@@ -41,21 +42,15 @@ const DAYS = [
   "Zondag",
 ] as const;
 
-const FEESTDAGEN = [
-  { naam: "Nieuwjaarsdag", datum: "1 januari" },
-  { naam: "Koningsdag", datum: "27 april" },
-  { naam: "Bevrijdingsdag", datum: "5 mei" },
-  { naam: "Hemelvaartsdag", datum: "14 mei" },
-  { naam: "Eerste Pinksterdag", datum: "25 mei" },
-  { naam: "Tweede Pinksterdag", datum: "26 mei" },
-  { naam: "Eerste Kerstdag", datum: "25 december" },
-  { naam: "Tweede Kerstdag", datum: "26 december" },
-];
+// Feestdagen worden dynamisch per jaar berekend via getDutchHolidays().
+// Zie src/lib/holidays.ts voor het Meeus/Jones/Butcher Pasen-algoritme.
 
 interface DaySchedule {
   open: boolean;
   van: string;
   tot: string;
+  pauzeVan?: string;
+  pauzeTot?: string;
 }
 
 const DEFAULT_SCHEDULE: Record<string, DaySchedule> = {
@@ -74,38 +69,14 @@ const INITIAL_WAARNEMER_IDS: string[] = allPraktijken
   .slice(0, 3)
   .map((p) => p.id);
 
-function formatClosureDate(iso: string) {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("nl-NL", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-const NL_MONTHS: Record<string, number> = {
-  januari: 0,
-  februari: 1,
-  maart: 2,
-  april: 3,
-  mei: 4,
-  juni: 5,
-  juli: 6,
-  augustus: 7,
-  september: 8,
-  oktober: 9,
-  november: 10,
-  december: 11,
-};
-
-// Converteert "1 januari" → { d: 1, m: 0 }
-function parseFeestdagDatum(s: string): { d: number; m: number } | null {
-  const match = s.toLowerCase().match(/^(\d+)\s+([a-z]+)/);
-  if (!match) return null;
-  const day = parseInt(match[1], 10);
-  const month = NL_MONTHS[match[2]];
-  if (month === undefined) return null;
-  return { d: day, m: month };
+interface VrijeDag {
+  id: string;
+  date: string; // YYYY-MM-DD
+  reden: string;
+  waarnemerId?: string;
+  fullDay: boolean;
+  van?: string;
+  tot?: string;
 }
 
 const NL_MONTH_LOOKUP: Record<string, number> = {
@@ -269,14 +240,33 @@ export default function CrmDashboardPage() {
     ...DEFAULT_SCHEDULE,
   });
 
-  // Sluitingsdagen
-  const [selectedFeestdagen, setSelectedFeestdagen] = useState<string[]>([
-    "Nieuwjaarsdag",
-    "Eerste Kerstdag",
-    "Tweede Kerstdag",
-  ]);
-  const [customClosures, setCustomClosures] = useState<string[]>([]);
-  const [newClosureDate, setNewClosureDate] = useState("");
+  // Feestdagen voor huidig jaar + volgend jaar (zodat kerst→nieuwjaar over de
+  // jaargrens heen blijven verschijnen).
+  const currentFeestdagenYear = new Date().getFullYear();
+  const feestdagenList = useMemo(
+    () => [
+      ...getDutchHolidays(currentFeestdagenYear),
+      ...getDutchHolidays(currentFeestdagenYear + 1),
+    ],
+    [currentFeestdagenYear]
+  );
+
+  // Sluitingsdagen — opgeslagen als ISO-datums (YYYY-MM-DD) zodat elke
+  // feestdag per jaar apart aan/uit kan.
+  const [selectedFeestdagen, setSelectedFeestdagen] = useState<string[]>(() => {
+    const y = new Date().getFullYear();
+    return [
+      `${y}-01-01`, // Nieuwjaarsdag
+      `${y}-12-25`, // Eerste Kerstdag
+      `${y}-12-26`, // Tweede Kerstdag
+    ];
+  });
+  // Extra vrije dagen (overrides op weekrooster + feestdagen)
+  const [vrijeDagen, setVrijeDagen] = useState<VrijeDag[]>([]);
+  const [vrijeDagModalOpen, setVrijeDagModalOpen] = useState(false);
+  const [editingVrijeDagId, setEditingVrijeDagId] = useState<string | null>(null);
+  const [vrijeDagDraft, setVrijeDagDraft] = useState<Partial<VrijeDag>>({});
+  const [showNextYearFeestdagen, setShowNextYearFeestdagen] = useState(false);
 
   // Rooster upload
   const [roosterFile, setRoosterFile] = useState<{
@@ -292,6 +282,17 @@ export default function CrmDashboardPage() {
     feestdagenMatched: number;
   } | null>(null);
   const [roosterError, setRoosterError] = useState<string | null>(null);
+
+  // Opslaan feedback + dirty-state detectie
+  const [saveToastOpen, setSaveToastOpen] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const savedSnapshotRef = useRef<string | null>(null);
+  const saveToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (saveToastTimer.current) clearTimeout(saveToastTimer.current);
+    };
+  }, []);
 
   // Waarnemers — alleen IDs, info komt live uit de echte database
   const [waarnemerIds, setWaarnemerIds] = useState<string[]>(INITIAL_WAARNEMER_IDS);
@@ -352,11 +353,12 @@ export default function CrmDashboardPage() {
       if (editingId) closeEditModal();
       if (deletingId) closeDeleteModal();
       if (dokterModalOpen) closeDokterModal();
+      if (vrijeDagModalOpen) closeVrijeDagModal();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [addModalOpen, editingId, deletingId, dokterModalOpen]);
+  }, [addModalOpen, editingId, deletingId, dokterModalOpen, vrijeDagModalOpen]);
 
   const toggleDayOpen = (day: string) => {
     setWeekSchedule((prev) => ({
@@ -370,53 +372,114 @@ export default function CrmDashboardPage() {
     }));
   };
 
-  const updateDayTime = (day: string, field: "van" | "tot", value: string) => {
+  const updateDayTime = (
+    day: string,
+    field: "van" | "tot" | "pauzeVan" | "pauzeTot",
+    value: string
+  ) => {
     setWeekSchedule((prev) => ({
       ...prev,
       [day]: { ...prev[day], [field]: value },
     }));
   };
 
-  const toggleFeestdag = (naam: string) => {
+  const addPauze = (day: string) => {
+    setWeekSchedule((prev) => ({
+      ...prev,
+      [day]: { ...prev[day], pauzeVan: "12:00", pauzeTot: "13:00" },
+    }));
+  };
+
+  const removePauze = (day: string) => {
+    setWeekSchedule((prev) => ({
+      ...prev,
+      [day]: { ...prev[day], pauzeVan: undefined, pauzeTot: undefined },
+    }));
+  };
+
+  const toggleFeestdag = (date: string) => {
     setSelectedFeestdagen((prev) =>
-      prev.includes(naam) ? prev.filter((f) => f !== naam) : [...prev, naam]
+      prev.includes(date) ? prev.filter((f) => f !== date) : [...prev, date]
     );
   };
 
-  const addCustomClosure = () => {
-    if (!newClosureDate) return;
-    setCustomClosures((prev) =>
-      prev.includes(newClosureDate) ? prev : [...prev, newClosureDate].sort()
-    );
-    setNewClosureDate("");
+  // Vrije dag modal
+  const openAddVrijeDagModal = () => {
+    setEditingVrijeDagId(null);
+    setVrijeDagDraft({ fullDay: true, van: "08:00", tot: "17:00" });
+    setVrijeDagModalOpen(true);
   };
-
-  const removeCustomClosure = (date: string) =>
-    setCustomClosures((prev) => prev.filter((d) => d !== date));
+  const openEditVrijeDagModal = (v: VrijeDag) => {
+    setEditingVrijeDagId(v.id);
+    setVrijeDagDraft({ ...v });
+    setVrijeDagModalOpen(true);
+  };
+  const closeVrijeDagModal = () => {
+    setVrijeDagModalOpen(false);
+    setEditingVrijeDagId(null);
+    setVrijeDagDraft({});
+  };
+  const saveVrijeDag = () => {
+    if (!vrijeDagDraft.date) return;
+    if (editingVrijeDagId) {
+      setVrijeDagen((prev) =>
+        prev
+          .map((v) =>
+            v.id === editingVrijeDagId
+              ? ({ ...v, ...vrijeDagDraft } as VrijeDag)
+              : v
+          )
+          .sort((a, b) => a.date.localeCompare(b.date))
+      );
+    } else {
+      const nieuw: VrijeDag = {
+        id: `vd-${Date.now()}`,
+        date: vrijeDagDraft.date,
+        reden: (vrijeDagDraft.reden ?? "").trim(),
+        waarnemerId: vrijeDagDraft.waarnemerId || undefined,
+        fullDay: vrijeDagDraft.fullDay ?? true,
+        van: vrijeDagDraft.fullDay ? undefined : vrijeDagDraft.van,
+        tot: vrijeDagDraft.fullDay ? undefined : vrijeDagDraft.tot,
+      };
+      setVrijeDagen((prev) =>
+        [...prev, nieuw].sort((a, b) => a.date.localeCompare(b.date))
+      );
+    }
+    closeVrijeDagModal();
+  };
+  const removeVrijeDag = (id: string) =>
+    setVrijeDagen((prev) => prev.filter((v) => v.id !== id));
 
   const applyExtractedDates = (text: string) => {
     const dates = extractDatesFromText(text);
-    const matchedFeestNamen: string[] = [];
-    const customDates: string[] = [];
-    for (const iso of dates) {
-      const d = new Date(iso + "T00:00:00");
-      const match = FEESTDAGEN.find((f) => {
-        const parsed = parseFeestdagDatum(f.datum);
-        if (!parsed) return false;
-        return d.getDate() === parsed.d && d.getMonth() === parsed.m;
-      });
-      if (match) matchedFeestNamen.push(match.naam);
-      else customDates.push(iso);
-    }
+    const matchedFeestDates: string[] = [];
+    const newVrije: VrijeDag[] = [];
+    setVrijeDagen((prev) => {
+      const existingDates = new Set(prev.map((v) => v.date));
+      for (const iso of dates) {
+        const match = feestdagenList.find((f) => f.date === iso);
+        if (match) {
+          matchedFeestDates.push(match.date);
+        } else if (!existingDates.has(iso)) {
+          newVrije.push({
+            id: `vd-${Date.now()}-${iso}`,
+            date: iso,
+            reden: "Geïmporteerd uit rooster",
+            fullDay: true,
+          });
+          existingDates.add(iso);
+        }
+      }
+      return [...prev, ...newVrije].sort((a, b) =>
+        a.date.localeCompare(b.date)
+      );
+    });
     setSelectedFeestdagen((prev) =>
-      Array.from(new Set([...prev, ...matchedFeestNamen]))
-    );
-    setCustomClosures((prev) =>
-      Array.from(new Set([...prev, ...customDates])).sort()
+      Array.from(new Set([...prev, ...matchedFeestDates]))
     );
     setRoosterImportSummary({
-      datesAdded: customDates.length,
-      feestdagenMatched: new Set(matchedFeestNamen).size,
+      datesAdded: newVrije.length,
+      feestdagenMatched: new Set(matchedFeestDates).size,
     });
   };
 
@@ -612,6 +675,68 @@ export default function CrmDashboardPage() {
     closeDeleteModal();
   };
 
+  // Snapshot van alle editable state. Wordt vergeleken met savedSnapshotRef
+  // om te bepalen of er niet-opgeslagen wijzigingen zijn.
+  const stateSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        praktijkNaam,
+        praktijkAdres,
+        praktijkPostcode,
+        praktijkPlaats,
+        praktijkTelefoon,
+        praktijkEmail,
+        praktijkWebsite,
+        praktijkLogo,
+        dokters,
+        waarnemerIds,
+        waarnemerOverrides,
+        weekSchedule,
+        selectedFeestdagen,
+        vrijeDagen,
+      }),
+    [
+      praktijkNaam,
+      praktijkAdres,
+      praktijkPostcode,
+      praktijkPlaats,
+      praktijkTelefoon,
+      praktijkEmail,
+      praktijkWebsite,
+      praktijkLogo,
+      dokters,
+      waarnemerIds,
+      waarnemerOverrides,
+      weekSchedule,
+      selectedFeestdagen,
+      vrijeDagen,
+    ]
+  );
+
+  useEffect(() => {
+    if (savedSnapshotRef.current === null) {
+      savedSnapshotRef.current = stateSnapshot;
+      return;
+    }
+    setIsDirty(stateSnapshot !== savedSnapshotRef.current);
+  }, [stateSnapshot]);
+
+  const handleSave = () => {
+    savedSnapshotRef.current = stateSnapshot;
+    setIsDirty(false);
+    if (saveToastTimer.current) clearTimeout(saveToastTimer.current);
+    setSaveToastOpen(true);
+    saveToastTimer.current = setTimeout(() => setSaveToastOpen(false), 2500);
+  };
+
+  const handleDiscard = () => {
+    // Placeholder: een echte revert vereist het herstellen van alle state
+    // uit de snapshot. Voor nu sluiten we alleen de dirty-indicator,
+    // zodat de gebruiker niet per ongeluk in een lock-in zit.
+    savedSnapshotRef.current = stateSnapshot;
+    setIsDirty(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
       {/* Sidebar */}
@@ -698,8 +823,8 @@ export default function CrmDashboardPage() {
               </h1>
               <p className="hidden text-[13px] text-gray-500 sm:block">
                 {active === "waarneming"
-                  ? "Beheer uw waarnemers, vrije dagen en openingstijden."
-                  : "Logo en praktijkgegevens."}
+                  ? "Beheer uw waarnemers en vrije dagen."
+                  : "Logo, praktijkgegevens en openingstijden."}
               </p>
             </div>
           </div>
@@ -721,7 +846,11 @@ export default function CrmDashboardPage() {
           </div>
         </header>
 
-        <main className="px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
+        <main
+          className={`px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10 ${
+            isDirty ? "pb-28 sm:pb-32" : ""
+          }`}
+        >
           {active === "waarneming" && (
             <div className="space-y-6">
               {/* Waarnemers */}
@@ -838,16 +967,24 @@ export default function CrmDashboardPage() {
                     Vrije dagen
                   </h2>
                   <p className="text-[12px] text-gray-500">
-                    Feestdagen en eigen vrije dagen waarop een waarnemer overneemt.
+                    Feestdagen en eigen vrije dagen waarop een waarnemer
+                    overneemt.
                   </p>
                 </div>
 
-                <div className="space-y-6 p-5 sm:p-6">
-                  {/* Rooster upload */}
+                <div className="space-y-8 p-5 sm:p-6">
+                  {/* Blok 1 — Rooster importeren (prominent, bovenaan) */}
                   <div>
-                    <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.1em] text-gray-400">
-                      Rooster uploaden
-                    </p>
+                    <div className="mb-3">
+                      <h3 className="text-[13px] font-semibold text-gray-900">
+                        Rooster importeren
+                      </h3>
+                      <p className="text-[12px] text-gray-500">
+                        Upload uw rooster met vrije dagen en feestdagen. Wij
+                        vullen alles automatisch in.
+                      </p>
+                    </div>
+
                     {!roosterFile ? (
                       <label className="flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-5 transition-colors hover:border-[#3585ff] hover:bg-[#f6faff] sm:px-5">
                         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-[#3585ff] shadow-sm">
@@ -868,9 +1005,8 @@ export default function CrmDashboardPage() {
                             Upload uw rooster
                           </div>
                           <div className="mt-0.5 text-[12px] leading-relaxed text-gray-500">
-                            CSV, Excel, PDF of afbeelding. Datums uit een CSV
-                            worden automatisch toegevoegd en feestdagen
-                            aangevinkt.
+                            CSV, Excel, PDF of afbeelding. Datums worden
+                            automatisch toegevoegd en feestdagen aangevinkt.
                           </div>
                         </div>
                         <input
@@ -908,25 +1044,9 @@ export default function CrmDashboardPage() {
                             </p>
                             {roosterFile.processing ? (
                               <p className="mt-0.5 flex items-center gap-1.5 text-[12px] text-gray-500">
-                                <svg
-                                  className="h-3 w-3 animate-spin text-[#3585ff]"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                >
-                                  <circle
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeOpacity="0.25"
-                                    strokeWidth="3"
-                                  />
-                                  <path
-                                    d="M22 12a10 10 0 0 1-10 10"
-                                    stroke="currentColor"
-                                    strokeWidth="3"
-                                    strokeLinecap="round"
-                                  />
+                                <svg className="h-3 w-3 animate-spin text-[#3585ff]" viewBox="0 0 24 24" fill="none">
+                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+                                  <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                                 </svg>
                                 {roosterFile.type === "image"
                                   ? "Afbeelding wordt gelezen…"
@@ -965,8 +1085,6 @@ export default function CrmDashboardPage() {
                             </svg>
                           </button>
                         </div>
-
-                        {/* Preview */}
                         <div className="p-4 sm:p-5">
                           {roosterFile.type === "image" && roosterFile.dataUrl && (
                             /* eslint-disable-next-line @next/next/no-img-element */
@@ -998,7 +1116,9 @@ export default function CrmDashboardPage() {
                                     >
                                       {row.map((cell, j) => (
                                         <td key={j} className="px-3 py-1.5">
-                                          {cell || <span className="text-gray-300">—</span>}
+                                          {cell || (
+                                            <span className="text-gray-300">—</span>
+                                          )}
                                         </td>
                                       ))}
                                     </tr>
@@ -1012,179 +1132,245 @@ export default function CrmDashboardPage() {
                     )}
                   </div>
 
-                  {/* Feestdagen */}
-                  <div>
-                    <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.1em] text-gray-400">
-                      Feestdagen
-                    </p>
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      {FEESTDAGEN.map((feestdag) => {
-                        const isSelected = selectedFeestdagen.includes(feestdag.naam);
-                        return (
-                          <button
-                            key={feestdag.naam}
-                            type="button"
-                            onClick={() => toggleFeestdag(feestdag.naam)}
-                            className={`flex items-center gap-3 rounded-lg border px-3.5 py-2.5 text-left transition-all ${
-                              isSelected
-                                ? "border-[#3585ff] bg-[#f6faff]"
-                                : "border-gray-200 bg-white hover:border-gray-300"
-                            }`}
-                          >
-                            <span
-                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 ${
-                                isSelected
-                                  ? "border-[#3585ff] bg-[#3585ff]"
-                                  : "border-gray-300"
-                              }`}
-                            >
-                              {isSelected && (
-                                <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M20 6L9 17l-5-5" />
-                                </svg>
-                              )}
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="truncate text-[13px] font-semibold text-gray-900">
-                                {feestdag.naam}
-                              </div>
-                              <div className="truncate text-[11px] text-gray-400">
-                                {feestdag.datum}
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                  {/* Divider — of ga handmatig verder */}
+                  <div className="relative flex items-center py-1">
+                    <div className="h-px flex-1 bg-gray-100" />
+                    <span className="px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-400">
+                      Of ga handmatig verder
+                    </span>
+                    <div className="h-px flex-1 bg-gray-100" />
                   </div>
 
-                  {/* Extra */}
+                  {/* Blok 2 — Feestdagen */}
                   <div>
-                    <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.1em] text-gray-400">
-                      Extra vrije dagen
-                    </p>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <input
-                        type="date"
-                        value={newClosureDate}
-                        onChange={(e) => setNewClosureDate(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            addCustomClosure();
-                          }
-                        }}
-                        className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 outline-none transition-colors focus:border-[#3585ff] focus:shadow-[0_0_0_3px_rgba(53,133,255,0.1)]"
-                      />
+                    <div className="mb-3">
+                      <h3 className="text-[13px] font-semibold text-gray-900">
+                        Feestdagen
+                      </h3>
+                      <p className="text-[12px] text-gray-500">
+                        Kies op welke feestdagen uw praktijk gesloten is.
+                      </p>
+                    </div>
+
+                    {[currentFeestdagenYear, currentFeestdagenYear + 1].map(
+                      (year, yearIdx) => {
+                        if (yearIdx === 1 && !showNextYearFeestdagen) return null;
+                        const yearFeestdagen = feestdagenList.filter((f) =>
+                          f.date.startsWith(String(year))
+                        );
+                        return (
+                          <div key={year} className={yearIdx > 0 ? "mt-5" : ""}>
+                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-400">
+                              {year}
+                            </p>
+                            <ul className="overflow-hidden rounded-lg border border-gray-100">
+                              {yearFeestdagen.map((f, i) => {
+                                const selected = selectedFeestdagen.includes(
+                                  f.date
+                                );
+                                return (
+                                  <li
+                                    key={f.date}
+                                    className={
+                                      i < yearFeestdagen.length - 1
+                                        ? "border-b border-gray-100"
+                                        : ""
+                                    }
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleFeestdag(f.date)}
+                                      className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                                        selected
+                                          ? "bg-[#f6faff]"
+                                          : "bg-white hover:bg-gray-50"
+                                      }`}
+                                    >
+                                      <span
+                                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 ${
+                                          selected
+                                            ? "border-[#3585ff] bg-[#3585ff]"
+                                            : "border-gray-300"
+                                        }`}
+                                      >
+                                        {selected && (
+                                          <svg
+                                            className="h-2.5 w-2.5 text-white"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth={4}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                          >
+                                            <path d="M20 6L9 17l-5-5" />
+                                          </svg>
+                                        )}
+                                      </span>
+                                      <span
+                                        className={`flex-1 text-[13px] ${
+                                          selected
+                                            ? "font-semibold text-gray-900"
+                                            : "text-gray-700"
+                                        }`}
+                                      >
+                                        {f.name}
+                                      </span>
+                                      <span className="text-[12px] text-gray-400">
+                                        {formatHolidayDate(f.date)}
+                                      </span>
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        );
+                      }
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setShowNextYearFeestdagen((v) => !v)}
+                      className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[#3585ff] transition-colors hover:text-[#1d5fd9]"
+                    >
+                      <svg
+                        className={`h-3 w-3 transition-transform ${
+                          showNextYearFeestdagen ? "rotate-45" : ""
+                        }`}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2.6}
+                        strokeLinecap="round"
+                      >
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                      {showNextYearFeestdagen
+                        ? `Verberg ${currentFeestdagenYear + 1}`
+                        : `Toon ${currentFeestdagenYear + 1}`}
+                    </button>
+                  </div>
+
+                  {/* Blok 3 — Extra vrije dagen */}
+                  <div>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-[13px] font-semibold text-gray-900">
+                          Extra vrije dagen
+                        </h3>
+                        <p className="text-[12px] text-gray-500">
+                          Vakanties, studiedagen en andere sluitingen.
+                        </p>
+                      </div>
                       <button
                         type="button"
-                        onClick={addCustomClosure}
-                        disabled={!newClosureDate}
-                        className="rounded-xl bg-[#1d1d1b] px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100"
+                        onClick={openAddVrijeDagModal}
+                        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#1d1d1b] px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:brightness-125 sm:px-3.5 sm:py-2"
                       >
-                        Toevoegen
+                        <svg
+                          className="h-3.5 w-3.5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2.6}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M12 5v14M5 12h14" />
+                        </svg>
+                        Vrije dag toevoegen
                       </button>
                     </div>
 
-                    {customClosures.length > 0 && (
-                      <ul className="mt-3 space-y-1.5">
-                        {customClosures.map((date) => (
-                          <li
-                            key={date}
-                            className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3.5 py-2.5"
-                          >
-                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#eef4ff] text-[#3585ff]">
-                              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3" y="4" width="18" height="18" rx="2" />
-                                <path d="M16 2v4M8 2v4M3 10h18" />
-                              </svg>
-                            </span>
-                            <span className="flex-1 truncate text-[13px] font-medium text-gray-900">
-                              {formatClosureDate(date)}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => removeCustomClosure(date)}
-                              aria-label="Verwijderen"
-                              className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                    {vrijeDagen.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center text-[13px] text-gray-500">
+                        Nog geen extra vrije dagen. Klik op{" "}
+                        <span className="font-semibold text-gray-900">
+                          Vrije dag toevoegen
+                        </span>
+                        .
+                      </div>
+                    ) : (
+                      <ul className="overflow-hidden rounded-lg border border-gray-100">
+                        {vrijeDagen.map((v, i) => {
+                          const waarnemer = v.waarnemerId
+                            ? waarnemers.find((w) => w.id === v.waarnemerId)
+                            : undefined;
+                          return (
+                            <li
+                              key={v.id}
+                              className={
+                                i < vrijeDagen.length - 1
+                                  ? "border-b border-gray-100"
+                                  : ""
+                              }
                             >
-                              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M6 6l12 12M18 6L6 18" />
-                              </svg>
-                            </button>
-                          </li>
-                        ))}
+                              <div className="flex items-start gap-3 px-4 py-3 sm:gap-4">
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#eef4ff] text-[#3585ff]">
+                                  <svg
+                                    className="h-[15px] w-[15px]"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2.2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                                    <path d="M16 2v4M8 2v4M3 10h18" />
+                                  </svg>
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-[14px] font-semibold text-gray-900">
+                                    {formatHolidayDate(v.date)}
+                                  </p>
+                                  <p className="mt-0.5 text-[12px] text-gray-500">
+                                    {v.reden || "Geen reden opgegeven"}
+                                    {!v.fullDay && v.van && v.tot && (
+                                      <> · {v.van}–{v.tot}</>
+                                    )}
+                                    {waarnemer && (
+                                      <> · Waarnemer: {waarnemer.naam}</>
+                                    )}
+                                  </p>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-0.5">
+                                  <button
+                                    type="button"
+                                    aria-label="Bewerken"
+                                    onClick={() => openEditVrijeDagModal(v)}
+                                    className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                                  >
+                                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    aria-label="Verwijderen"
+                                    onClick={() => removeVrijeDag(v.id)}
+                                    className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                                  >
+                                    <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M3 6h18" />
+                                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                      <path d="M10 11v6M14 11v6" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </div>
+
                 </div>
               </section>
 
-              {/* Openingstijden */}
-              <section className="rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(15,23,40,0.03)]">
-                <div className="border-b border-black/[0.05] px-5 py-4 sm:px-6">
-                  <h2 className="text-[15px] font-semibold text-gray-900">
-                    Openingstijden
-                  </h2>
-                  <p className="text-[12px] text-gray-500">
-                    Uw normale weekrooster.
-                  </p>
-                </div>
-                <div>
-                  {DAYS.map((day, i) => {
-                    const schedule = weekSchedule[day];
-                    return (
-                      <div
-                        key={day}
-                        className={`flex flex-wrap items-center gap-3 px-5 py-3 sm:gap-4 sm:px-6 ${
-                          i < DAYS.length - 1 ? "border-b border-black/[0.04]" : ""
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => toggleDayOpen(day)}
-                          aria-label={`${day} ${schedule.open ? "sluiten" : "openen"}`}
-                          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                            schedule.open ? "bg-[#3585ff]" : "bg-gray-200"
-                          }`}
-                        >
-                          <span
-                            className={`absolute top-0.5 block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                              schedule.open ? "translate-x-[22px]" : "translate-x-0.5"
-                            }`}
-                          />
-                        </button>
-                        <span
-                          className={`w-20 text-[13px] font-semibold sm:w-24 sm:text-[14px] ${
-                            schedule.open ? "text-gray-900" : "text-gray-400"
-                          }`}
-                        >
-                          {day}
-                        </span>
-                        {schedule.open ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="time"
-                              value={schedule.van}
-                              onChange={(e) => updateDayTime(day, "van", e.target.value)}
-                              className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
-                            />
-                            <span className="text-[13px] text-gray-400">—</span>
-                            <input
-                              type="time"
-                              value={schedule.tot}
-                              onChange={(e) => updateDayTime(day, "tot", e.target.value)}
-                              className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
-                            />
-                          </div>
-                        ) : (
-                          <span className="text-[13px] text-gray-400">Gesloten</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
             </div>
           )}
 
@@ -1397,10 +1583,210 @@ export default function CrmDashboardPage() {
                 </div>
               </section>
 
+              {/* Openingstijden */}
+              <section className="rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(15,23,40,0.03)]">
+                <div className="border-b border-black/[0.05] px-5 py-4 sm:px-6">
+                  <h2 className="text-[15px] font-semibold text-gray-900">
+                    Openingstijden
+                  </h2>
+                  <p className="text-[12px] text-gray-500">
+                    Uw normale weekrooster. Voeg per dag optioneel een pauze toe.
+                  </p>
+                </div>
+                <div>
+                  {DAYS.map((day, i) => {
+                    const schedule = weekSchedule[day];
+                    const hasPauze =
+                      schedule.pauzeVan !== undefined &&
+                      schedule.pauzeTot !== undefined;
+                    return (
+                      <div
+                        key={day}
+                        className={`px-5 py-3 sm:px-6 ${
+                          i < DAYS.length - 1
+                            ? "border-b border-black/[0.04]"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                          <button
+                            type="button"
+                            onClick={() => toggleDayOpen(day)}
+                            aria-label={`${day} ${schedule.open ? "sluiten" : "openen"}`}
+                            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                              schedule.open ? "bg-[#3585ff]" : "bg-gray-200"
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                                schedule.open
+                                  ? "translate-x-[22px]"
+                                  : "translate-x-0.5"
+                              }`}
+                            />
+                          </button>
+                          <span
+                            className={`w-20 text-[13px] font-semibold sm:w-24 sm:text-[14px] ${
+                              schedule.open ? "text-gray-900" : "text-gray-400"
+                            }`}
+                          >
+                            {day}
+                          </span>
+                          {schedule.open ? (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="time"
+                                  value={schedule.van}
+                                  onChange={(e) =>
+                                    updateDayTime(day, "van", e.target.value)
+                                  }
+                                  className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                                />
+                                <span className="text-[13px] text-gray-400">—</span>
+                                <input
+                                  type="time"
+                                  value={schedule.tot}
+                                  onChange={(e) =>
+                                    updateDayTime(day, "tot", e.target.value)
+                                  }
+                                  className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                                />
+                              </div>
+                              {!hasPauze && (
+                                <button
+                                  type="button"
+                                  onClick={() => addPauze(day)}
+                                  className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-semibold text-[#3585ff] transition-colors hover:bg-[#eef4ff]"
+                                >
+                                  <svg
+                                    className="h-3 w-3"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2.6}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <path d="M12 5v14M5 12h14" />
+                                  </svg>
+                                  Pauze
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-[13px] text-gray-400">
+                              Gesloten
+                            </span>
+                          )}
+                        </div>
+
+                        {schedule.open && hasPauze && (
+                          <div className="ml-[44px] mt-2 flex flex-wrap items-center gap-2 sm:ml-[48px] sm:gap-3">
+                            <span className="text-[12px] font-medium text-gray-500">
+                              Pauze
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="time"
+                                value={schedule.pauzeVan ?? ""}
+                                onChange={(e) =>
+                                  updateDayTime(day, "pauzeVan", e.target.value)
+                                }
+                                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                              />
+                              <span className="text-[13px] text-gray-400">—</span>
+                              <input
+                                type="time"
+                                value={schedule.pauzeTot ?? ""}
+                                onChange={(e) =>
+                                  updateDayTime(day, "pauzeTot", e.target.value)
+                                }
+                                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removePauze(day)}
+                              aria-label="Verwijder pauze"
+                              className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                            >
+                              <svg
+                                className="h-3.5 w-3.5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2.4}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M6 6l12 12M18 6L6 18" />
+                              </svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
             </div>
           )}
         </main>
       </div>
+
+      {/* Sticky save bar — alleen zichtbaar bij wijzigingen */}
+      {isDirty && (
+        <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-30 flex justify-center px-4 pb-4 lg:left-[260px] lg:pb-5">
+          <div className="pointer-events-auto flex w-full max-w-[680px] items-center justify-between gap-3 rounded-2xl border border-black/[0.06] bg-white/95 px-4 py-3 shadow-[0_12px_32px_-8px_rgba(15,23,40,0.25)] backdrop-blur-md sm:px-5 animate-[popupIn_200ms_ease-out]">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4M12 16h.01" />
+                </svg>
+              </span>
+              <p className="text-[13px] font-medium text-gray-900">
+                Niet-opgeslagen wijzigingen
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={handleDiscard}
+                className="rounded-lg px-3 py-2 text-[12.5px] font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+              >
+                Negeren
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#1d1d1b] px-4 py-2 text-[12.5px] font-semibold text-white transition-colors hover:brightness-125"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <path d="M17 21v-8H7v8M7 3v5h8" />
+                </svg>
+                Opslaan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save success toast */}
+      {saveToastOpen && (
+        <div className="fixed bottom-6 left-1/2 z-[90] -translate-x-1/2 animate-[popupIn_200ms_ease-out]">
+          <div className="flex items-center gap-3 rounded-full bg-[#0f1728] px-5 py-3 text-[13px] font-medium text-white shadow-[0_12px_32px_-8px_rgba(15,23,40,0.35)]">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500">
+              <svg className="h-3 w-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+            </span>
+            Wijzigingen opgeslagen
+          </div>
+        </div>
+      )}
 
       {/* Add waarnemer modal */}
       {addModalOpen && (
@@ -1560,6 +1946,130 @@ export default function CrmDashboardPage() {
               </div>
             </>
           )}
+        </Modal>
+      )}
+
+      {/* Vrije dag add/edit modal */}
+      {vrijeDagModalOpen && (
+        <Modal
+          onClose={closeVrijeDagModal}
+          title={editingVrijeDagId ? "Vrije dag bewerken" : "Vrije dag toevoegen"}
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-[12px] font-medium text-gray-600">
+                Datum
+              </label>
+              <input
+                type="date"
+                value={vrijeDagDraft.date ?? ""}
+                onChange={(e) =>
+                  setVrijeDagDraft((d) => ({ ...d, date: e.target.value }))
+                }
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-[14px] text-gray-900 outline-none transition-colors focus:border-[#3585ff] focus:shadow-[0_0_0_3px_rgba(53,133,255,0.1)]"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-[12px] font-medium text-gray-600">
+                Reden
+              </label>
+              <input
+                type="text"
+                value={vrijeDagDraft.reden ?? ""}
+                onChange={(e) =>
+                  setVrijeDagDraft((d) => ({ ...d, reden: e.target.value }))
+                }
+                placeholder="bv. Vakantie, Studiedag, Congres…"
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-[14px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors focus:border-[#3585ff] focus:shadow-[0_0_0_3px_rgba(53,133,255,0.1)]"
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2.5">
+              <div>
+                <p className="text-[13px] font-medium text-gray-900">
+                  Hele dag gesloten
+                </p>
+                <p className="text-[11px] text-gray-500">
+                  Uit: afwijkende openingstijden instellen
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={vrijeDagDraft.fullDay ?? true}
+                onClick={() =>
+                  setVrijeDagDraft((d) => ({
+                    ...d,
+                    fullDay: !(d.fullDay ?? true),
+                  }))
+                }
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                  (vrijeDagDraft.fullDay ?? true)
+                    ? "bg-[#3585ff]"
+                    : "bg-gray-200"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                    (vrijeDagDraft.fullDay ?? true)
+                      ? "translate-x-[22px]"
+                      : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {!(vrijeDagDraft.fullDay ?? true) && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-medium text-gray-600">
+                    Van
+                  </label>
+                  <input
+                    type="time"
+                    value={vrijeDagDraft.van ?? ""}
+                    onChange={(e) =>
+                      setVrijeDagDraft((d) => ({ ...d, van: e.target.value }))
+                    }
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-[14px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-medium text-gray-600">
+                    Tot
+                  </label>
+                  <input
+                    type="time"
+                    value={vrijeDagDraft.tot ?? ""}
+                    onChange={(e) =>
+                      setVrijeDagDraft((d) => ({ ...d, tot: e.target.value }))
+                    }
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-[14px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-5 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={closeVrijeDagModal}
+              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-[13px] font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+            >
+              Annuleren
+            </button>
+            <button
+              type="button"
+              onClick={saveVrijeDag}
+              disabled={!vrijeDagDraft.date}
+              className="rounded-lg bg-[#1d1d1b] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100"
+            >
+              Opslaan
+            </button>
+          </div>
         </Modal>
       )}
 
