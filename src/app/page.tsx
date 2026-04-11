@@ -280,7 +280,7 @@ export default function WieIsMijnWaarnemerHomepage() {
         title: "Zoek op naam",
         text: "Typ de naam van uw huisartsenpraktijk of gebruik uw locatie.",
         icon: (
-          <svg className="h-16 w-16 text-[#1d1d1b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+          <svg className="h-6 w-6 text-[#1d1d1b] sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="7" />
             <path d="M21 21l-4.3-4.3" />
           </svg>
@@ -291,7 +291,7 @@ export default function WieIsMijnWaarnemerHomepage() {
         title: "Zie de waarnemer",
         text: "Direct duidelijk welke praktijk vandaag waarneemt.",
         icon: (
-          <svg className="h-16 w-16 text-[#1d1d1b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+          <svg className="h-6 w-6 text-[#1d1d1b] sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             <path d="M8 12l3 3 5-6" />
           </svg>
@@ -302,7 +302,7 @@ export default function WieIsMijnWaarnemerHomepage() {
         title: "Bel of bezoek",
         text: "U heeft meteen het juiste adres en telefoonnummer.",
         icon: (
-          <svg className="h-16 w-16 text-[#1d1d1b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+          <svg className="h-6 w-6 text-[#1d1d1b] sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z" />
           </svg>
         ),
@@ -753,10 +753,8 @@ export default function WieIsMijnWaarnemerHomepage() {
           <div className="grid grid-cols-1 gap-12 md:grid-cols-3 md:gap-10 lg:gap-14">
             {steps.map((step) => (
               <div key={step.n} className="flex h-full flex-col items-center">
-                <div className="mb-6 flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-[#f5f5f4] sm:h-28 sm:w-28 md:h-32 md:w-32 lg:h-36 lg:w-36">
-                  <div className="scale-[0.6] sm:scale-[0.7] md:scale-[0.8]">
-                    {step.icon}
-                  </div>
+                <div className="mb-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#f5f5f4] sm:h-16 sm:w-16">
+                  {step.icon}
                 </div>
                 <h3 className="mb-3 text-xl font-semibold text-gray-900 sm:text-2xl">
                   {step.title}
@@ -796,8 +794,11 @@ export default function WieIsMijnWaarnemerHomepage() {
                     onClick={() => pickStad(stad)}
                     className="group flex w-full items-center gap-5 py-6 text-left transition-colors sm:gap-6 sm:py-7"
                   >
-                    <span className="shrink-0 text-[13px] font-semibold tabular-nums text-gray-400 transition-colors group-hover:text-[#3585ff]">
-                      {String(i + 1).padStart(2, "0")}
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#eef4ff] text-[#3585ff] transition-colors group-hover:bg-[#3585ff] group-hover:text-white">
+                      <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
                     </span>
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900 transition-colors group-hover:text-[#3585ff] sm:text-xl">
@@ -889,7 +890,7 @@ export default function WieIsMijnWaarnemerHomepage() {
                     <a href="/voor-praktijken" className="text-[15px] text-white/85 transition-colors hover:text-white">Voor praktijken</a>
                   </li>
                   <li>
-                    <a href="/praktijkpaginas" className="text-[15px] text-white/85 transition-colors hover:text-white">Praktijkpagina beheren</a>
+                    <a href="/portaal" className="text-[15px] text-white/85 transition-colors hover:text-white">Praktijkpagina beheren</a>
                   </li>
                 </ul>
               </div>
