@@ -39,14 +39,7 @@ export default function PortaalLoginPage() {
         <main className="flex flex-1 items-center justify-center py-10">
           <div className="w-full max-w-[440px]">
             <div className="mb-8 text-center">
-              <span className="inline-flex items-center gap-2 rounded-full bg-[#eef4ff] px-3 py-1 text-[12px] font-semibold text-[#3585ff]">
-                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                Praktijkportaal
-              </span>
-              <h1 className="mt-5 text-[28px] font-semibold leading-[1.15] tracking-[-0.02em] text-gray-900 sm:text-[32px]">
+              <h1 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.02em] text-gray-900 sm:text-[32px]">
                 Welkom terug
               </h1>
               <p className="mt-2 text-[15px] text-gray-500">

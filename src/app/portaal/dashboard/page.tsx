@@ -6,17 +6,27 @@ import { zoekPraktijken, type Praktijk } from "@/lib/praktijk-search";
 import { praktijken as allPraktijken } from "@/data/praktijken";
 import { getDutchHolidays, formatHolidayDate } from "@/lib/holidays";
 
-type NavKey = "waarneming" | "praktijk";
+type NavKey = "waarnemers" | "openingstijden" | "praktijk";
 
 const navItems: { key: NavKey; label: string; icon: React.ReactNode }[] = [
   {
-    key: "waarneming",
-    label: "Waarneming",
+    key: "waarnemers",
+    label: "Waarnemers",
     icon: (
       <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
         <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
+  {
+    key: "openingstijden",
+    label: "Openingstijden & afwezigheid",
+    icon: (
+      <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 6v6l4 2" />
       </svg>
     ),
   },
@@ -147,7 +157,7 @@ function parseCsvPreview(text: string, maxRows = 6): string[][] {
 }
 
 export default function CrmDashboardPage() {
-  const [active, setActive] = useState<NavKey>("waarneming");
+  const [active, setActive] = useState<NavKey>("waarnemers");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Praktijk info (editable)
@@ -288,6 +298,98 @@ export default function CrmDashboardPage() {
   const [isDirty, setIsDirty] = useState(false);
   const savedSnapshotRef = useRef<string | null>(null);
   const saveToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Welkomstmodal + onboarding-tour (vanuit /aanmelden met ?welcome=1)
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [onboardingHighlight, setOnboardingHighlight] = useState<
+    "rooster" | "feestdagen" | "extra" | null
+  >(null);
+  const vrijeDagenSectionRef = useRef<HTMLElement | null>(null);
+  const roosterBlockRef = useRef<HTMLDivElement | null>(null);
+  const feestdagenBlockRef = useRef<HTMLDivElement | null>(null);
+  const extraBlockRef = useRef<HTMLDivElement | null>(null);
+  const onboardingTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("welcome") === "1") {
+      setWelcomeOpen(true);
+      // URL opschonen zodat refresh de modal niet opnieuw triggert
+      const url = new URL(window.location.href);
+      url.searchParams.delete("welcome");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []);
+
+  useEffect(() => {
+    const timers = onboardingTimersRef.current;
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+    };
+  }, []);
+
+  const scrollIntoCenter = (el: HTMLElement | null) => {
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  const closeWelcomeAndStartTour = () => {
+    setWelcomeOpen(false);
+    setActive("openingstijden");
+    setTimeout(() => {
+      setOnboardingHighlight("rooster");
+      scrollIntoCenter(roosterBlockRef.current);
+    }, 100);
+  };
+
+  const nextOnboardingStep = () => {
+    if (onboardingHighlight === "rooster") {
+      setOnboardingHighlight("feestdagen");
+      setTimeout(
+        () => scrollIntoCenter(feestdagenBlockRef.current),
+        50
+      );
+    } else if (onboardingHighlight === "feestdagen") {
+      setOnboardingHighlight("extra");
+      setTimeout(() => scrollIntoCenter(extraBlockRef.current), 50);
+    } else if (onboardingHighlight === "extra") {
+      setOnboardingHighlight(null);
+      setTimeout(() => {
+        vrijeDagenSectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 50);
+    }
+  };
+
+  const skipOnboarding = () => {
+    setOnboardingHighlight(null);
+    setTimeout(() => {
+      vrijeDagenSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 50);
+  };
+
+  const ONBOARDING_STEPS = {
+    rooster: {
+      index: 1,
+      body: "Importeer uw rooster met alle dagen waarop uw praktijk dicht is.",
+      last: false,
+    },
+    feestdagen: {
+      index: 2,
+      body: "Of selecteer de feestdagen handmatig waarop u gesloten bent.",
+      last: false,
+    },
+    extra: {
+      index: 3,
+      body: "Voeg hier uw eigen vrije dagen handmatig toe.",
+      last: true,
+    },
+  } as const;
   useEffect(() => {
     return () => {
       if (saveToastTimer.current) clearTimeout(saveToastTimer.current);
@@ -601,14 +703,46 @@ export default function CrmDashboardPage() {
     setRoosterError(null);
   };
 
+  const [recentlyMovedWaarnemerId, setRecentlyMovedWaarnemerId] = useState<
+    string | null
+  >(null);
+  const movedHighlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  useEffect(() => {
+    const timer = movedHighlightTimerRef;
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
+
   const moveWaarnemer = (index: number, direction: -1 | 1) => {
     const next = index + direction;
     if (next < 0 || next >= waarnemerIds.length) return;
+    const movedId = waarnemerIds[index];
     setWaarnemerIds((prev) => {
       const arr = [...prev];
       [arr[index], arr[next]] = [arr[next], arr[index]];
       return arr;
     });
+    setRecentlyMovedWaarnemerId(movedId);
+    if (movedHighlightTimerRef.current) {
+      clearTimeout(movedHighlightTimerRef.current);
+    }
+    movedHighlightTimerRef.current = setTimeout(() => {
+      setRecentlyMovedWaarnemerId(null);
+    }, 1200);
+    // Scroll de verplaatste kaart in beeld in de horizontale lijst
+    setTimeout(() => {
+      const el = document.querySelector<HTMLLIElement>(
+        `[data-waarnemer-id="${movedId}"]`
+      );
+      el?.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    }, 50);
   };
 
   // Add modal
@@ -819,27 +953,36 @@ export default function CrmDashboardPage() {
             </button>
             <div>
               <h1 className="text-[18px] font-semibold tracking-[-0.01em] text-gray-900 sm:text-[20px]">
-                {active === "waarneming" ? "Waarneming" : "Mijn praktijk"}
+                {active === "waarnemers"
+                  ? "Waarnemers"
+                  : active === "openingstijden"
+                    ? "Openingstijden & afwezigheid"
+                    : "Mijn praktijk"}
               </h1>
               <p className="hidden text-[13px] text-gray-500 sm:block">
-                {active === "waarneming"
-                  ? "Beheer uw waarnemers en vrije dagen."
-                  : "Logo, praktijkgegevens en openingstijden."}
+                {active === "waarnemers"
+                  ? "Beheer wie uw praktijk waarneemt."
+                  : active === "openingstijden"
+                    ? "Weekrooster, feestdagen en vrije dagen."
+                    : "Logo, dokters en praktijkgegevens."}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-gray-50">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#3585ff] to-[#5b9fff] text-[13px] font-semibold text-white">
-                DV
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#3585ff] to-[#5b9fff] text-white">
+                <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <path d="M9 22V12h6v10" />
+                </svg>
               </div>
               <div className="hidden sm:block">
                 <p className="text-[13px] font-semibold text-gray-900 leading-tight">
-                  Dr. De Vries
+                  {praktijkNaam}
                 </p>
                 <p className="text-[11px] text-gray-500 leading-tight">
-                  {praktijkNaam}
+                  Praktijkportaal
                 </p>
               </div>
             </div>
@@ -851,117 +994,305 @@ export default function CrmDashboardPage() {
             isDirty ? "pb-28 sm:pb-32" : ""
           }`}
         >
-          {active === "waarneming" && (
+          {active === "waarnemers" && (
             <div className="space-y-6">
               {/* Waarnemers */}
-              <section className="rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(15,23,40,0.03)]">
-                <div className="flex items-center justify-between gap-4 border-b border-black/[0.05] px-5 py-4 sm:px-6">
+              <section>
+                <div className="mb-5 flex items-end justify-between gap-4">
                   <div>
-                    <h2 className="text-[15px] font-semibold text-gray-900">
+                    <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-gray-900 sm:text-[20px]">
                       Waarnemers
                     </h2>
-                    <p className="text-[12px] text-gray-500">
-                      De eerste in de lijst wordt als standaard getoond.
+                    <p className="mt-1 text-[13px] text-gray-500">
+                      De eerste kaart wordt als standaard waarnemer getoond. Versleep met de pijltjes.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={openAddModal}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#1d1d1b] px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:brightness-125 sm:px-3.5 sm:py-2"
-                  >
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    Toevoegen
-                  </button>
                 </div>
 
-                <ul className="divide-y divide-black/[0.04]">
-                  {waarnemers.map((w, index) => {
-                    const isFirst = index === 0;
-                    const isLast = index === waarnemers.length - 1;
-                    return (
-                      <li key={w.id} className="px-5 py-4 sm:px-6">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                          <span
-                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[12px] font-semibold ${
-                              isFirst
-                                ? "bg-[#3585ff] text-white"
-                                : "bg-[#eef4ff] text-[#3585ff]"
-                            }`}
-                          >
-                            {index + 1}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-[14px] font-semibold text-gray-900">
+                <div className="-mx-4 overflow-x-auto px-4 pb-4 pt-3 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10 [scrollbar-width:thin]">
+                  <ul className="flex gap-4 sm:gap-5">
+                    {waarnemers.map((w, index) => {
+                      const isFirst = index === 0;
+                      const isLast = index === waarnemers.length - 1;
+                      return (
+                        <li
+                          key={w.id}
+                          data-waarnemer-id={w.id}
+                          className={`group relative flex aspect-square w-[300px] shrink-0 flex-col rounded-2xl border bg-white p-6 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-12px_rgba(15,23,40,0.18)] sm:w-[320px] sm:p-7 ${
+                            recentlyMovedWaarnemerId === w.id
+                              ? "scale-[1.03] border-[#3585ff] shadow-[0_0_0_4px_rgba(53,133,255,0.18),0_24px_48px_-16px_rgba(53,133,255,0.45)]"
+                              : "border-black/[0.06] shadow-[0_1px_3px_rgba(15,23,40,0.04)]"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <span
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[15px] font-semibold ${
+                                isFirst
+                                  ? "bg-[#3585ff] text-white shadow-[0_4px_12px_-2px_rgba(53,133,255,0.4)]"
+                                  : "bg-[#eef4ff] text-[#3585ff]"
+                              }`}
+                            >
+                              {index + 1}
+                            </span>
+                            {isFirst && (
+                              <span className="rounded-full bg-[#3585ff]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#3585ff]">
+                                Standaard
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mt-5 flex-1 overflow-hidden">
+                            <p className="line-clamp-2 text-[17px] font-semibold leading-snug tracking-[-0.01em] text-gray-900">
                               {w.naam}
                             </p>
-                            <p className="truncate text-[12px] text-gray-500">
-                              {w.straat}, {w.postcode} {w.plaats}
-                              {w.telefoon ? ` · ${w.telefoon}` : ""}
+                            <p className="mt-2.5 text-[13.5px] leading-relaxed text-gray-500">
+                              {w.straat}
+                              <br />
+                              {w.postcode} {w.plaats}
                             </p>
+                            {w.telefoon && (
+                              <p className="mt-2.5 flex items-center gap-1.5 truncate text-[13px] font-medium text-gray-700">
+                                <svg className="h-3.5 w-3.5 shrink-0 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z" />
+                                </svg>
+                                {w.telefoon}
+                              </p>
+                            )}
                           </div>
-                          <div className="flex shrink-0 items-center gap-0.5">
-                            <button
-                              type="button"
-                              aria-label="Omhoog"
-                              onClick={() => moveWaarnemer(index, -1)}
-                              disabled={isFirst}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-30 disabled:hover:bg-transparent"
-                            >
-                              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M5 15l7-7 7 7" />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              aria-label="Omlaag"
-                              onClick={() => moveWaarnemer(index, 1)}
-                              disabled={isLast}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-30 disabled:hover:bg-transparent"
-                            >
-                              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              aria-label="Bewerken"
-                              onClick={() => openEditModal(w.id)}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                            >
-                              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              aria-label="Verwijderen"
-                              onClick={() => openDeleteModal(w.id)}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                            >
-                              <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 6h18" />
-                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                                <path d="M10 11v6M14 11v6" />
-                              </svg>
-                            </button>
+
+                          <div className="mt-5 flex items-center justify-between border-t border-black/[0.05] pt-4">
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                type="button"
+                                aria-label="Naar links"
+                                onClick={() => moveWaarnemer(index, -1)}
+                                disabled={isFirst}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-30 disabled:hover:bg-transparent"
+                              >
+                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M15 18l-6-6 6-6" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="Naar rechts"
+                                onClick={() => moveWaarnemer(index, 1)}
+                                disabled={isLast}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-30 disabled:hover:bg-transparent"
+                              >
+                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M9 18l6-6-6-6" />
+                                </svg>
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                type="button"
+                                aria-label="Bewerken"
+                                onClick={() => openEditModal(w.id)}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                              >
+                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="Verwijderen"
+                                onClick={() => openDeleteModal(w.id)}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                              >
+                                <svg className="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M3 6h18" />
+                                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                  <path d="M10 11v6M14 11v6" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
+                        </li>
+                      );
+                    })}
+
+                    {/* Toevoegen-card */}
+                    <li className="shrink-0">
+                      <button
+                        type="button"
+                        onClick={openAddModal}
+                        className="group flex aspect-square w-[300px] flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-gray-200 bg-white/40 text-gray-500 transition-all hover:-translate-y-0.5 hover:border-[#3585ff] hover:bg-[#f6faff] hover:text-[#3585ff] sm:w-[320px]"
+                      >
+                        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors group-hover:bg-[#3585ff] group-hover:text-white">
+                          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 5v14M5 12h14" />
+                          </svg>
+                        </span>
+                        <span className="text-[14px] font-semibold">
+                          Waarnemer toevoegen
+                        </span>
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {active === "openingstijden" && (
+            <div className="space-y-6">
+              {/* Openingstijden */}
+              <section className="rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(15,23,40,0.03)]">
+                <div className="border-b border-black/[0.05] px-5 py-4 sm:px-6">
+                  <h2 className="text-[15px] font-semibold text-gray-900">
+                    Openingstijden
+                  </h2>
+                  <p className="text-[12px] text-gray-500">
+                    Uw normale weekrooster. Voeg per dag optioneel een pauze toe.
+                  </p>
+                </div>
+                <div>
+                  {DAYS.map((day, i) => {
+                    const schedule = weekSchedule[day];
+                    const hasPauze =
+                      schedule.pauzeVan !== undefined &&
+                      schedule.pauzeTot !== undefined;
+                    return (
+                      <div
+                        key={day}
+                        className={`px-5 py-3 sm:px-6 ${
+                          i < DAYS.length - 1
+                            ? "border-b border-black/[0.04]"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                          <button
+                            type="button"
+                            onClick={() => toggleDayOpen(day)}
+                            aria-label={`${day} ${schedule.open ? "sluiten" : "openen"}`}
+                            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                              schedule.open ? "bg-[#3585ff]" : "bg-gray-200"
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                                schedule.open
+                                  ? "translate-x-[22px]"
+                                  : "translate-x-0.5"
+                              }`}
+                            />
+                          </button>
+                          <span
+                            className={`w-20 text-[13px] font-semibold sm:w-24 sm:text-[14px] ${
+                              schedule.open ? "text-gray-900" : "text-gray-400"
+                            }`}
+                          >
+                            {day}
+                          </span>
+                          {schedule.open ? (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="time"
+                                  value={schedule.van}
+                                  onChange={(e) =>
+                                    updateDayTime(day, "van", e.target.value)
+                                  }
+                                  className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                                />
+                                <span className="text-[13px] text-gray-400">—</span>
+                                <input
+                                  type="time"
+                                  value={schedule.tot}
+                                  onChange={(e) =>
+                                    updateDayTime(day, "tot", e.target.value)
+                                  }
+                                  className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                                />
+                              </div>
+                              {!hasPauze && (
+                                <button
+                                  type="button"
+                                  onClick={() => addPauze(day)}
+                                  className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-semibold text-[#3585ff] transition-colors hover:bg-[#eef4ff]"
+                                >
+                                  <svg
+                                    className="h-3 w-3"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2.6}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <path d="M12 5v14M5 12h14" />
+                                  </svg>
+                                  Pauze
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-[13px] text-gray-400">
+                              Gesloten
+                            </span>
+                          )}
                         </div>
-                      </li>
+
+                        {schedule.open && hasPauze && (
+                          <div className="ml-[44px] mt-2 flex flex-wrap items-center gap-2 sm:ml-[48px] sm:gap-3">
+                            <span className="text-[12px] font-medium text-gray-500">
+                              Pauze
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="time"
+                                value={schedule.pauzeVan ?? ""}
+                                onChange={(e) =>
+                                  updateDayTime(day, "pauzeVan", e.target.value)
+                                }
+                                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                              />
+                              <span className="text-[13px] text-gray-400">—</span>
+                              <input
+                                type="time"
+                                value={schedule.pauzeTot ?? ""}
+                                onChange={(e) =>
+                                  updateDayTime(day, "pauzeTot", e.target.value)
+                                }
+                                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removePauze(day)}
+                              aria-label="Verwijder pauze"
+                              className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                            >
+                              <svg
+                                className="h-3.5 w-3.5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2.4}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M6 6l12 12M18 6L6 18" />
+                              </svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
-                  {waarnemers.length === 0 && (
-                    <li className="px-5 py-6 text-center text-[13px] text-gray-500 sm:px-6">
-                      Nog geen waarnemers. Klik op <span className="font-semibold">Toevoegen</span>.
-                    </li>
-                  )}
-                </ul>
+                </div>
               </section>
 
               {/* Vrije dagen */}
-              <section className="rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(15,23,40,0.03)]">
+              <section
+                ref={vrijeDagenSectionRef}
+                className="scroll-mt-24 rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(15,23,40,0.03)]"
+              >
                 <div className="border-b border-black/[0.05] px-5 py-4 sm:px-6">
                   <h2 className="text-[15px] font-semibold text-gray-900">
                     Vrije dagen
@@ -974,8 +1305,16 @@ export default function CrmDashboardPage() {
 
                 <div className="space-y-8 p-5 sm:p-6">
                   {/* Blok 1 — Rooster importeren (prominent, bovenaan) */}
-                  <div>
-                    <div className="mb-3">
+                  <div ref={roosterBlockRef} className="relative">
+                    <div
+                      aria-hidden
+                      className={`pointer-events-none absolute -inset-8 rounded-[40px] bg-[#3585ff] blur-3xl transition-opacity duration-700 ${
+                        onboardingHighlight === "rooster"
+                          ? "opacity-[0.18]"
+                          : "opacity-0"
+                      }`}
+                    />
+                    <div className="relative mb-3">
                       <h3 className="text-[13px] font-semibold text-gray-900">
                         Rooster importeren
                       </h3>
@@ -1142,8 +1481,16 @@ export default function CrmDashboardPage() {
                   </div>
 
                   {/* Blok 2 — Feestdagen */}
-                  <div>
-                    <div className="mb-3">
+                  <div ref={feestdagenBlockRef} className="relative">
+                    <div
+                      aria-hidden
+                      className={`pointer-events-none absolute -inset-8 rounded-[40px] bg-[#3585ff] blur-3xl transition-opacity duration-700 ${
+                        onboardingHighlight === "feestdagen"
+                          ? "opacity-[0.18]"
+                          : "opacity-0"
+                      }`}
+                    />
+                    <div className="relative mb-3">
                       <h3 className="text-[13px] font-semibold text-gray-900">
                         Feestdagen
                       </h3>
@@ -1253,8 +1600,16 @@ export default function CrmDashboardPage() {
                   </div>
 
                   {/* Blok 3 — Extra vrije dagen */}
-                  <div>
-                    <div className="mb-3 flex items-center justify-between gap-3">
+                  <div ref={extraBlockRef} className="relative">
+                    <div
+                      aria-hidden
+                      className={`pointer-events-none absolute -inset-8 rounded-[40px] bg-[#3585ff] blur-3xl transition-opacity duration-700 ${
+                        onboardingHighlight === "extra"
+                          ? "opacity-[0.18]"
+                          : "opacity-0"
+                      }`}
+                    />
+                    <div className="relative mb-3 flex items-center justify-between gap-3">
                       <div>
                         <h3 className="text-[13px] font-semibold text-gray-900">
                           Extra vrije dagen
@@ -1583,157 +1938,115 @@ export default function CrmDashboardPage() {
                 </div>
               </section>
 
-              {/* Openingstijden */}
-              <section className="rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(15,23,40,0.03)]">
-                <div className="border-b border-black/[0.05] px-5 py-4 sm:px-6">
-                  <h2 className="text-[15px] font-semibold text-gray-900">
-                    Openingstijden
-                  </h2>
-                  <p className="text-[12px] text-gray-500">
-                    Uw normale weekrooster. Voeg per dag optioneel een pauze toe.
-                  </p>
-                </div>
-                <div>
-                  {DAYS.map((day, i) => {
-                    const schedule = weekSchedule[day];
-                    const hasPauze =
-                      schedule.pauzeVan !== undefined &&
-                      schedule.pauzeTot !== undefined;
-                    return (
-                      <div
-                        key={day}
-                        className={`px-5 py-3 sm:px-6 ${
-                          i < DAYS.length - 1
-                            ? "border-b border-black/[0.04]"
-                            : ""
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                          <button
-                            type="button"
-                            onClick={() => toggleDayOpen(day)}
-                            aria-label={`${day} ${schedule.open ? "sluiten" : "openen"}`}
-                            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                              schedule.open ? "bg-[#3585ff]" : "bg-gray-200"
-                            }`}
-                          >
-                            <span
-                              className={`absolute top-0.5 block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                                schedule.open
-                                  ? "translate-x-[22px]"
-                                  : "translate-x-0.5"
-                              }`}
-                            />
-                          </button>
-                          <span
-                            className={`w-20 text-[13px] font-semibold sm:w-24 sm:text-[14px] ${
-                              schedule.open ? "text-gray-900" : "text-gray-400"
-                            }`}
-                          >
-                            {day}
-                          </span>
-                          {schedule.open ? (
-                            <>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="time"
-                                  value={schedule.van}
-                                  onChange={(e) =>
-                                    updateDayTime(day, "van", e.target.value)
-                                  }
-                                  className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
-                                />
-                                <span className="text-[13px] text-gray-400">—</span>
-                                <input
-                                  type="time"
-                                  value={schedule.tot}
-                                  onChange={(e) =>
-                                    updateDayTime(day, "tot", e.target.value)
-                                  }
-                                  className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
-                                />
-                              </div>
-                              {!hasPauze && (
-                                <button
-                                  type="button"
-                                  onClick={() => addPauze(day)}
-                                  className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-semibold text-[#3585ff] transition-colors hover:bg-[#eef4ff]"
-                                >
-                                  <svg
-                                    className="h-3 w-3"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth={2.6}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <path d="M12 5v14M5 12h14" />
-                                  </svg>
-                                  Pauze
-                                </button>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-[13px] text-gray-400">
-                              Gesloten
-                            </span>
-                          )}
-                        </div>
-
-                        {schedule.open && hasPauze && (
-                          <div className="ml-[44px] mt-2 flex flex-wrap items-center gap-2 sm:ml-[48px] sm:gap-3">
-                            <span className="text-[12px] font-medium text-gray-500">
-                              Pauze
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="time"
-                                value={schedule.pauzeVan ?? ""}
-                                onChange={(e) =>
-                                  updateDayTime(day, "pauzeVan", e.target.value)
-                                }
-                                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
-                              />
-                              <span className="text-[13px] text-gray-400">—</span>
-                              <input
-                                type="time"
-                                value={schedule.pauzeTot ?? ""}
-                                onChange={(e) =>
-                                  updateDayTime(day, "pauzeTot", e.target.value)
-                                }
-                                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removePauze(day)}
-                              aria-label="Verwijder pauze"
-                              className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                            >
-                              <svg
-                                className="h-3.5 w-3.5"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth={2.4}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M6 6l12 12M18 6L6 18" />
-                              </svg>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
             </div>
           )}
         </main>
       </div>
+
+      {/* Welkom-modal (eerste bezoek vanuit aanmelden) */}
+      {welcomeOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center px-4 animate-[fadeIn_200ms_ease-out]"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={closeWelcomeAndStartTour}
+          />
+          <div className="relative w-full max-w-[460px] origin-center animate-[popupIn_240ms_cubic-bezier(0.16,1,0.3,1)] rounded-2xl bg-white p-7 shadow-[0_24px_60px_-12px_rgba(15,23,40,0.35)] sm:p-8">
+            <div className="flex flex-col items-center text-center">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-50 text-green-600">
+                <svg
+                  className="h-7 w-7"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              </span>
+              <h2 className="mt-5 text-[20px] font-semibold leading-snug text-gray-900 sm:text-[22px]">
+                Welkom! Uw praktijk staat live.
+              </h2>
+              <p className="mt-2 text-[14px] leading-relaxed text-gray-500 sm:text-[14.5px]">
+                Nog één laatste dingetje: voeg de dagen toe waarop uw praktijk
+                dicht is, zodat patiënten meteen de juiste waarnemer zien.
+              </p>
+
+              <button
+                type="button"
+                onClick={closeWelcomeAndStartTour}
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1d1d1b] px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:brightness-125"
+              >
+                Oké, verder
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M5 12h14M13 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Onboarding coach-mark */}
+      {onboardingHighlight && (() => {
+        const step = ONBOARDING_STEPS[onboardingHighlight];
+        return (
+          <div className="fixed bottom-6 left-4 right-4 z-[95] flex justify-center sm:left-auto sm:right-6 sm:justify-end">
+            <div className="w-full max-w-[380px] rounded-2xl border border-black/[0.06] bg-white p-5 shadow-[0_24px_60px_-12px_rgba(15,23,40,0.35)] animate-[popupIn_220ms_ease-out]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#3585ff]">
+                Stap {step.index} van 3
+              </p>
+              <p className="mt-2 text-[14px] leading-relaxed text-gray-900">
+                {step.body}
+              </p>
+              <div className="mt-5 flex items-center justify-end gap-2">
+                {!step.last && (
+                  <button
+                    type="button"
+                    onClick={skipOnboarding}
+                    className="rounded-lg px-3 py-2 text-[12.5px] font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    Overslaan
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={nextOnboardingStep}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#1d1d1b] px-4 py-2 text-[12.5px] font-semibold text-white transition-colors hover:brightness-125"
+                >
+                  {step.last ? "Klaar" : "Verder"}
+                  {!step.last && (
+                    <svg
+                      className="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.4}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 12h14M13 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Sticky save bar — alleen zichtbaar bij wijzigingen */}
       {isDirty && (

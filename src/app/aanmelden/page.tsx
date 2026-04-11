@@ -19,21 +19,12 @@ const DAYS = [
   "Zondag",
 ] as const;
 
-const FEESTDAGEN = [
-  { naam: "Nieuwjaarsdag", datum: "1 januari" },
-  { naam: "Koningsdag", datum: "27 april" },
-  { naam: "Bevrijdingsdag", datum: "5 mei" },
-  { naam: "Hemelvaartsdag", datum: "14 mei" },
-  { naam: "Eerste Pinksterdag", datum: "25 mei" },
-  { naam: "Tweede Pinksterdag", datum: "26 mei" },
-  { naam: "Eerste Kerstdag", datum: "25 december" },
-  { naam: "Tweede Kerstdag", datum: "26 december" },
-];
-
 interface DaySchedule {
   open: boolean;
   van: string;
   tot: string;
+  pauzeVan?: string;
+  pauzeTot?: string;
 }
 
 const DEFAULT_SCHEDULE: Record<string, DaySchedule> = {
@@ -51,8 +42,8 @@ const STEP_LABELS = [
   "Verificatie",
   "Waarnemers",
   "Openingstijden",
-  "Klaar",
   "Wachtwoord",
+  "Klaar",
 ];
 
 export default function AanmeldenPage() {
@@ -69,9 +60,6 @@ export default function AanmeldenPage() {
   const [weekSchedule, setWeekSchedule] = useState<Record<string, DaySchedule>>({
     ...DEFAULT_SCHEDULE,
   });
-  const [selectedFeestdagen, setSelectedFeestdagen] = useState<string[]>([]);
-  const [customClosures, setCustomClosures] = useState<string[]>([]);
-  const [newClosureDate, setNewClosureDate] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -105,42 +93,29 @@ export default function AanmeldenPage() {
     }));
   };
 
-  const updateDayTime = (day: string, field: "van" | "tot", value: string) => {
+  const updateDayTime = (
+    day: string,
+    field: "van" | "tot" | "pauzeVan" | "pauzeTot",
+    value: string
+  ) => {
     setWeekSchedule((prev) => ({
       ...prev,
       [day]: { ...prev[day], [field]: value },
     }));
   };
 
-  const toggleFeestdag = (naam: string) => {
-    setSelectedFeestdagen((prev) =>
-      prev.includes(naam) ? prev.filter((f) => f !== naam) : [...prev, naam]
-    );
+  const addPauze = (day: string) => {
+    setWeekSchedule((prev) => ({
+      ...prev,
+      [day]: { ...prev[day], pauzeVan: "12:00", pauzeTot: "13:00" },
+    }));
   };
 
-  const selectAllFeestdagen = () => {
-    setSelectedFeestdagen(FEESTDAGEN.map((f) => f.naam));
-  };
-
-  const addCustomClosure = () => {
-    if (!newClosureDate) return;
-    setCustomClosures((prev) =>
-      prev.includes(newClosureDate) ? prev : [...prev, newClosureDate].sort()
-    );
-    setNewClosureDate("");
-  };
-
-  const removeCustomClosure = (date: string) => {
-    setCustomClosures((prev) => prev.filter((d) => d !== date));
-  };
-
-  const formatClosureDate = (iso: string) => {
-    const d = new Date(iso + "T00:00:00");
-    return d.toLocaleDateString("nl-NL", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+  const removePauze = (day: string) => {
+    setWeekSchedule((prev) => ({
+      ...prev,
+      [day]: { ...prev[day], pauzeVan: undefined, pauzeTot: undefined },
+    }));
   };
 
   const passwordScore = (() => {
@@ -190,23 +165,25 @@ export default function AanmeldenPage() {
                 className="h-10 w-auto sm:h-12"
               />
             </a>
-            <a
-              href="/"
-              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-500 transition-colors hover:text-gray-900 sm:text-[14px]"
-            >
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            {step !== 5 && (
+              <a
+                href="/"
+                className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-500 transition-colors hover:text-gray-900 sm:text-[14px]"
               >
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-              Afsluiten
-            </a>
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+                Afsluiten
+              </a>
+            )}
           </div>
         </div>
       </header>
@@ -812,7 +789,7 @@ export default function AanmeldenPage() {
                 </div>
               )}
 
-              <div className="mt-10 flex flex-col-reverse gap-2.5 sm:flex-row sm:gap-3">
+              <div className="sticky bottom-4 mt-10 flex flex-col-reverse gap-2.5 rounded-xl bg-white/90 p-2 backdrop-blur-sm shadow-[0_12px_32px_-8px_rgba(15,23,40,0.15)] sm:bottom-6 sm:flex-row sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setStep(1)}
@@ -846,227 +823,139 @@ export default function AanmeldenPage() {
               <div className="mt-8 overflow-hidden rounded-xl border border-gray-200 bg-white">
                 {DAYS.map((day, i) => {
                   const schedule = weekSchedule[day];
+                  const hasPauze =
+                    schedule.pauzeVan !== undefined &&
+                    schedule.pauzeTot !== undefined;
                   return (
                     <div
                       key={day}
-                      className={`flex flex-wrap items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5 ${
+                      className={`px-4 py-3 sm:px-5 ${
                         i < DAYS.length - 1 ? "border-b border-gray-100" : ""
                       }`}
                     >
-                      <button
-                        type="button"
-                        onClick={() => toggleDayOpen(day)}
-                        aria-label={`${day} ${schedule.open ? "sluiten" : "openen"}`}
-                        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                          schedule.open ? "bg-[#3585ff]" : "bg-gray-200"
-                        }`}
-                      >
-                        <span
-                          className={`absolute top-0.5 block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                            schedule.open ? "translate-x-[22px]" : "translate-x-0.5"
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                        <button
+                          type="button"
+                          onClick={() => toggleDayOpen(day)}
+                          aria-label={`${day} ${schedule.open ? "sluiten" : "openen"}`}
+                          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                            schedule.open ? "bg-[#3585ff]" : "bg-gray-200"
                           }`}
-                        />
-                      </button>
-
-                      <span
-                        className={`w-20 text-[13px] font-semibold sm:w-24 sm:text-[14px] ${
-                          schedule.open ? "text-gray-900" : "text-gray-400"
-                        }`}
-                      >
-                        {day}
-                      </span>
-
-                      {schedule.open ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="time"
-                            value={schedule.van}
-                            onChange={(e) => updateDayTime(day, "van", e.target.value)}
-                            className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                        >
+                          <span
+                            className={`absolute top-0.5 block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                              schedule.open
+                                ? "translate-x-[22px]"
+                                : "translate-x-0.5"
+                            }`}
                           />
-                          <span className="text-[13px] text-gray-400">—</span>
-                          <input
-                            type="time"
-                            value={schedule.tot}
-                            onChange={(e) => updateDayTime(day, "tot", e.target.value)}
-                            className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
-                          />
+                        </button>
+
+                        <span
+                          className={`w-20 text-[13px] font-semibold sm:w-24 sm:text-[14px] ${
+                            schedule.open ? "text-gray-900" : "text-gray-400"
+                          }`}
+                        >
+                          {day}
+                        </span>
+
+                        {schedule.open ? (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="time"
+                                value={schedule.van}
+                                onChange={(e) =>
+                                  updateDayTime(day, "van", e.target.value)
+                                }
+                                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                              />
+                              <span className="text-[13px] text-gray-400">—</span>
+                              <input
+                                type="time"
+                                value={schedule.tot}
+                                onChange={(e) =>
+                                  updateDayTime(day, "tot", e.target.value)
+                                }
+                                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                              />
+                            </div>
+                            {!hasPauze && (
+                              <button
+                                type="button"
+                                onClick={() => addPauze(day)}
+                                className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-semibold text-[#3585ff] transition-colors hover:bg-[#eef4ff]"
+                              >
+                                <svg
+                                  className="h-3 w-3"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth={2.6}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M12 5v14M5 12h14" />
+                                </svg>
+                                Pauze
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-[13px] text-gray-400">Gesloten</span>
+                        )}
+                      </div>
+
+                      {schedule.open && hasPauze && (
+                        <div className="ml-[44px] mt-2 flex flex-wrap items-center gap-2 sm:ml-[48px] sm:gap-3">
+                          <span className="text-[12px] font-medium text-gray-500">
+                            Pauze
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="time"
+                              value={schedule.pauzeVan ?? ""}
+                              onChange={(e) =>
+                                updateDayTime(day, "pauzeVan", e.target.value)
+                              }
+                              className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                            />
+                            <span className="text-[13px] text-gray-400">—</span>
+                            <input
+                              type="time"
+                              value={schedule.pauzeTot ?? ""}
+                              onChange={(e) =>
+                                updateDayTime(day, "pauzeTot", e.target.value)
+                              }
+                              className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[13px] text-gray-900 outline-none transition-colors focus:border-[#3585ff]"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removePauze(day)}
+                            aria-label="Verwijder pauze"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                          >
+                            <svg
+                              className="h-3.5 w-3.5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={2.4}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M6 6l12 12M18 6L6 18" />
+                            </svg>
+                          </button>
                         </div>
-                      ) : (
-                        <span className="text-[13px] text-gray-400">Gesloten</span>
                       )}
                     </div>
                   );
                 })}
               </div>
 
-              {/* Feestdagen */}
-              <div className="mt-8">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-gray-400">
-                    Feestdagen (gesloten)
-                  </p>
-                  <button
-                    type="button"
-                    onClick={selectAllFeestdagen}
-                    className="text-[12px] font-semibold text-[#3585ff] transition-colors hover:text-[#1d5fd9]"
-                  >
-                    Alle selecteren
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {FEESTDAGEN.map((feestdag) => {
-                    const isSelected = selectedFeestdagen.includes(feestdag.naam);
-                    return (
-                      <button
-                        key={feestdag.naam}
-                        type="button"
-                        onClick={() => toggleFeestdag(feestdag.naam)}
-                        className={`flex items-center gap-3 rounded-lg border px-3.5 py-2.5 text-left transition-all ${
-                          isSelected
-                            ? "border-[#3585ff] bg-[#f6faff]"
-                            : "border-gray-200 bg-white hover:border-gray-300"
-                        }`}
-                      >
-                        <span
-                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 ${
-                            isSelected
-                              ? "border-[#3585ff] bg-[#3585ff]"
-                              : "border-gray-300"
-                          }`}
-                        >
-                          {isSelected && (
-                            <svg
-                              className="h-2.5 w-2.5 text-white"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth={4}
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M20 6L9 17l-5-5" />
-                            </svg>
-                          )}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-[13px] font-semibold text-gray-900">
-                            {feestdag.naam}
-                          </div>
-                          <div className="truncate text-[11px] text-gray-400">
-                            {feestdag.datum}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Eigen sluitingsdagen */}
-              <div className="mt-8">
-                <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.1em] text-gray-400">
-                  Extra sluitingsdagen
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
-                    type="date"
-                    value={newClosureDate}
-                    onChange={(e) => setNewClosureDate(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addCustomClosure();
-                      }
-                    }}
-                    className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 outline-none transition-colors focus:border-[#3585ff] focus:shadow-[0_0_0_3px_rgba(53,133,255,0.1)] sm:text-[15px]"
-                  />
-                  <button
-                    type="button"
-                    onClick={addCustomClosure}
-                    disabled={!newClosureDate}
-                    className="rounded-xl bg-[#1d1d1b] px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100 sm:text-[15px]"
-                  >
-                    Toevoegen
-                  </button>
-                </div>
-
-                {customClosures.length > 0 && (
-                  <ul className="mt-3 space-y-1.5">
-                    {customClosures.map((date) => (
-                      <li
-                        key={date}
-                        className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3.5 py-2.5"
-                      >
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#eef4ff] text-[#3585ff]">
-                          <svg
-                            className="h-3.5 w-3.5"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2.2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <rect x="3" y="4" width="18" height="18" rx="2" />
-                            <path d="M16 2v4M8 2v4M3 10h18" />
-                          </svg>
-                        </span>
-                        <span className="flex-1 truncate text-[13px] font-medium text-gray-900 sm:text-[14px]">
-                          {formatClosureDate(date)}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeCustomClosure(date)}
-                          aria-label="Verwijderen"
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                        >
-                          <svg
-                            className="h-3.5 w-3.5"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2.4}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M6 6l12 12M18 6L6 18" />
-                          </svg>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              {/* CSV upload */}
-              <label className="mt-6 flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-4 transition-colors hover:border-[#3585ff] hover:bg-[#f6faff] sm:px-5 sm:py-5">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-[#3585ff] shadow-sm sm:h-12 sm:w-12">
-                  <svg
-                    className="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <path d="M14 2v6h6M12 18v-6M9 15l3-3 3 3" />
-                  </svg>
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[14px] font-semibold text-gray-900">
-                    Heeft u al een rooster? Upload het hier
-                  </div>
-                  <div className="mt-0.5 text-[12px] text-gray-500">
-                    CSV of Excel — we vullen de tijden automatisch in
-                  </div>
-                </div>
-                <input type="file" accept=".csv,.xlsx" className="hidden" />
-              </label>
-
-              <div className="mt-10 flex flex-col-reverse gap-2.5 sm:flex-row sm:gap-3">
+              <div className="sticky bottom-4 mt-10 flex flex-col-reverse gap-2.5 rounded-xl bg-white/90 p-2 backdrop-blur-sm shadow-[0_12px_32px_-8px_rgba(15,23,40,0.15)] sm:bottom-6 sm:flex-row sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setStep(2)}
@@ -1077,16 +966,27 @@ export default function AanmeldenPage() {
                 <button
                   type="button"
                   onClick={() => setStep(4)}
-                  className="w-full rounded-xl bg-[#1d1d1b] px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:brightness-125 sm:flex-1 sm:text-[15px]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1d1d1b] px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:brightness-125 sm:flex-1 sm:text-[15px]"
                 >
-                  Publiceer mijn praktijk
+                  Volgende
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M5 12h14M13 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
             </div>
           )}
 
-          {/* Stap 5 — Klaar */}
-          {step === 4 && selectedPractice && (
+          {/* Stap 6 — Klaar */}
+          {step === 5 && selectedPractice && (
             <div>
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-50 text-green-600 sm:h-16 sm:w-16">
                 <svg
@@ -1193,49 +1093,34 @@ export default function AanmeldenPage() {
                         );
                       })}
                     </div>
-                    {(selectedFeestdagen.length > 0 || customClosures.length > 0) && (
-                      <div className="mt-3 space-y-1 border-t border-gray-100 pt-3 text-[12px] text-gray-400">
-                        {selectedFeestdagen.length > 0 && (
-                          <div>
-                            + {selectedFeestdagen.length} feestdag
-                            {selectedFeestdagen.length !== 1 ? "en" : ""} gesloten
-                          </div>
-                        )}
-                        {customClosures.length > 0 && (
-                          <div>
-                            + {customClosures.length} extra sluitingsdag
-                            {customClosures.length !== 1 ? "en" : ""}
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setStep(5)}
-                className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1d1d1b] px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:brightness-125 sm:w-auto sm:text-[15px]"
-              >
-                Ga verder
-                <svg
-                  className="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.4}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+              <div className="sticky bottom-4 mt-8 sm:bottom-6">
+                <a
+                  href="/portaal/dashboard?welcome=1"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1d1d1b] px-5 py-4 text-[14px] font-semibold text-white shadow-[0_12px_32px_-8px_rgba(15,23,40,0.3)] transition-colors hover:brightness-125 sm:text-[15px]"
                 >
-                  <path d="M5 12h14M13 5l7 7-7 7" />
-                </svg>
-              </button>
+                  Ga naar portaal
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M5 12h14M13 5l7 7-7 7" />
+                  </svg>
+                </a>
+              </div>
             </div>
           )}
 
-          {/* Stap 6 — Wachtwoord instellen */}
-          {step === 5 && (
+          {/* Stap 5 — Wachtwoord instellen */}
+          {step === 4 && (
             <div>
               <h1 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.02em] text-gray-900 sm:text-[32px] md:text-[36px]">
                 Stel uw <span className="text-[#7ab0ff]">wachtwoord in.</span>
@@ -1350,27 +1235,21 @@ export default function AanmeldenPage() {
                 </div>
               </div>
 
-              <div className="mt-10 flex flex-col-reverse gap-2.5 sm:flex-row sm:gap-3">
+              <div className="sticky bottom-4 mt-10 flex flex-col-reverse gap-2.5 rounded-xl bg-white/90 p-2 backdrop-blur-sm shadow-[0_12px_32px_-8px_rgba(15,23,40,0.15)] sm:bottom-6 sm:flex-row sm:gap-3">
                 <button
                   type="button"
-                  onClick={() => setStep(4)}
+                  onClick={() => setStep(3)}
                   className="w-full rounded-xl border border-gray-200 bg-white px-5 py-3.5 text-[14px] font-medium text-gray-600 transition-colors hover:bg-gray-50 sm:w-auto"
                 >
                   Terug
                 </button>
-                <a
-                  href={canSubmitPassword ? "/portaal/dashboard" : undefined}
-                  aria-disabled={!canSubmitPassword}
-                  onClick={(e) => {
-                    if (!canSubmitPassword) e.preventDefault();
-                  }}
-                  className={`inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1d1d1b] px-5 py-3.5 text-[14px] font-semibold text-white transition-colors sm:flex-1 sm:text-[15px] ${
-                    canSubmitPassword
-                      ? "hover:brightness-125"
-                      : "cursor-not-allowed opacity-40"
-                  }`}
+                <button
+                  type="button"
+                  onClick={() => canSubmitPassword && setStep(5)}
+                  disabled={!canSubmitPassword}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1d1d1b] px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100 sm:flex-1 sm:text-[15px]"
                 >
-                  Open mijn dashboard
+                  Volgende
                   <svg
                     className="h-4 w-4"
                     viewBox="0 0 24 24"
@@ -1382,7 +1261,7 @@ export default function AanmeldenPage() {
                   >
                     <path d="M5 12h14M13 5l7 7-7 7" />
                   </svg>
-                </a>
+                </button>
               </div>
             </div>
           )}

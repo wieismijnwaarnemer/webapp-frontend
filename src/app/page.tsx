@@ -549,7 +549,7 @@ export default function WieIsMijnWaarnemerHomepage() {
               {/* Content */}
               <div className="flex flex-col text-center lg:text-left">
                 <h1 className="text-[2rem] font-semibold leading-[1.1] tracking-[-0.035em] text-white sm:text-[2.4rem] md:text-[2.75rem] lg:text-[3rem] xl:text-[3.4rem]">
-                  Is uw huisarts gesloten?
+                  Is uw huisartsenpraktijk gesloten?
                   <br />
                   <span className="text-[#7ab0ff]">Vind hier direct uw waarnemer.</span>
                 </h1>
