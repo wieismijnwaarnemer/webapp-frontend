@@ -265,6 +265,14 @@ export default function WieIsMijnWaarnemerHomepage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b, "nl"));
   }, []);
 
+  const praktijkCountPerStad = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const p of praktijken) {
+      map[p.stad] = (map[p.stad] ?? 0) + 1;
+    }
+    return map;
+  }, []);
+
   const pickStad = (stad: string) => {
     setQuery(stad);
     setShowDropdown(true);
@@ -695,98 +703,116 @@ export default function WieIsMijnWaarnemerHomepage() {
       </section>
 
       {/* Zo werkt het */}
-      <section className="bg-white px-4 py-20 sm:px-6 sm:py-28 md:py-32 lg:px-8">
-        <div className="mx-auto max-w-4xl text-center">
-          <h2 className="mb-4 text-2xl font-semibold text-gray-900 sm:text-3xl md:text-4xl">
-            In 3 stappen uw waarnemer vinden
-          </h2>
-          <p className="mx-auto mb-16 max-w-xl text-base text-gray-500 sm:mb-20 sm:text-lg">
-            Geen gedoe, geen gebel. Binnen dertig seconden ziet u waar u vandaag terechtkunt.
-          </p>
+      <section className="bg-white py-20 sm:py-28 md:py-32">
+        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-20">
+            {/* Links: headline */}
+            <div className="lg:sticky lg:top-32 lg:self-start">
+              <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.14em] text-gray-400">
+                Zo werkt het
+              </p>
+              <h2 className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:text-4xl md:text-[2.75rem]">
+                In 3 stappen uw waarnemer vinden.
+              </h2>
+              <p className="mt-5 max-w-md text-base leading-relaxed text-gray-500 sm:text-lg">
+                Geen gedoe, geen gebel. Binnen dertig seconden ziet u waar u vandaag terechtkunt.
+              </p>
+            </div>
 
-          <ol className="grid grid-cols-1 gap-10 border-t border-gray-100 pt-10 text-left sm:grid-cols-3 sm:gap-8 sm:pt-12">
-            {[
-              { n: "1", title: "Zoek op naam", text: "Typ de naam van uw huisartsenpraktijk of gebruik uw locatie." },
-              { n: "2", title: "Zie de waarnemer", text: "Direct duidelijk welke praktijk vandaag waarneemt." },
-              { n: "3", title: "Bel of bezoek", text: "U heeft meteen het juiste adres en telefoonnummer." },
-            ].map((step) => (
-              <li key={step.n}>
-                <p className="mb-3 text-sm font-semibold text-gray-400">
-                  {step.n.padStart(2, "0")}
-                </p>
-                <h3 className="mb-2 text-lg font-semibold text-gray-900 sm:text-xl">
-                  {step.title}
-                </h3>
-                <p className="text-sm text-gray-500 sm:text-base">
-                  {step.text}
-                </p>
-              </li>
-            ))}
-          </ol>
+            {/* Rechts: stappen */}
+            <ol className="flex flex-col">
+              {[
+                { n: "01", title: "Zoek op naam", text: "Typ de naam van uw huisartsenpraktijk of gebruik uw locatie." },
+                { n: "02", title: "Zie de waarnemer", text: "Direct duidelijk welke praktijk vandaag waarneemt." },
+                { n: "03", title: "Bel of bezoek", text: "U heeft meteen het juiste adres en telefoonnummer." },
+              ].map((step, i) => (
+                <li
+                  key={step.n}
+                  className={`flex gap-5 py-7 sm:gap-6 sm:py-8 ${
+                    i !== 0 ? "border-t border-gray-100" : ""
+                  }`}
+                >
+                  <span className="shrink-0 text-[13px] font-semibold tabular-nums text-gray-400">
+                    {step.n}
+                  </span>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 sm:text-xl">
+                      {step.title}
+                    </h3>
+                    <p className="mt-2 text-[15px] leading-relaxed text-gray-500 sm:text-base">
+                      {step.text}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       </section>
 
       {/* Regio's */}
-      <section className="bg-white px-4 py-20 sm:px-6 sm:py-28 md:py-32 lg:px-8">
-        <div className="mx-auto max-w-4xl text-center">
-          <h2 className="mb-4 text-2xl font-semibold text-gray-900 sm:text-3xl md:text-4xl">
-            Beschikbaar in deze regio&apos;s
-          </h2>
-          <p className="mx-auto mb-10 max-w-xl text-base text-gray-500 sm:text-lg">
-            Klik op uw stad om direct alle deelnemende huisartsenpraktijken te zien.
-          </p>
+      <section className="bg-white py-20 sm:py-28 md:py-32">
+        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-20">
+            {/* Links: headline */}
+            <div className="lg:sticky lg:top-32 lg:self-start">
+              <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.14em] text-gray-400">
+                Regio&apos;s
+              </p>
+              <h2 className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:text-4xl md:text-[2.75rem]">
+                Beschikbaar in uw regio.
+              </h2>
+              <p className="mt-5 max-w-md text-base leading-relaxed text-gray-500 sm:text-lg">
+                {praktijken.length} deelnemende huisartsenpraktijken in {beschikbareSteden.length} {beschikbareSteden.length === 1 ? "stad" : "steden"}. Kies uw stad om direct alle praktijken te zien.
+              </p>
+            </div>
 
-          <div className="mb-16 flex flex-wrap items-center justify-center gap-2.5 sm:mb-20">
-            {beschikbareSteden.map((stad) => (
-              <button
-                key={stad}
-                type="button"
-                onClick={() => pickStad(stad)}
-                className="group inline-flex items-center gap-2 rounded-full bg-[#0f1728] px-5 py-2.5 text-[14px] font-semibold text-white transition-all hover:brightness-110 sm:text-[15px]"
-              >
-                {stad}
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20">
-                  <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7v10" />
-                  </svg>
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-3 gap-6 border-t border-gray-100 pt-10 sm:gap-8 sm:pt-12">
-            <div className="text-center">
-              <p className="mb-1 text-2xl font-medium text-gray-900 sm:text-3xl md:text-4xl">
-                {praktijken.length}+
-              </p>
-              <p className="text-xs text-gray-400 sm:text-sm">
-                Deelnemende praktijken
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="mb-1 text-2xl font-medium text-gray-900 sm:text-3xl md:text-4xl">
-                {beschikbareSteden.length}
-              </p>
-              <p className="text-xs text-gray-400 sm:text-sm">
-                Steden en regio&apos;s
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="mb-1 text-2xl font-medium text-gray-900 sm:text-3xl md:text-4xl">
-                100%
-              </p>
-              <p className="text-xs text-gray-400 sm:text-sm">
-                Gratis te gebruiken
-              </p>
-            </div>
+            {/* Rechts: stedenlijst */}
+            <ul className="flex flex-col">
+              {beschikbareSteden.map((stad, i) => (
+                <li
+                  key={stad}
+                  className={i !== 0 ? "border-t border-gray-100" : ""}
+                >
+                  <button
+                    type="button"
+                    onClick={() => pickStad(stad)}
+                    className="group flex w-full items-center gap-5 py-6 text-left transition-colors sm:gap-6 sm:py-7"
+                  >
+                    <span className="shrink-0 text-[13px] font-semibold tabular-nums text-gray-400 transition-colors group-hover:text-[#3585ff]">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 transition-colors group-hover:text-[#3585ff] sm:text-xl">
+                        {stad}
+                      </h3>
+                      <p className="mt-1 text-[14px] text-gray-500">
+                        {praktijkCountPerStad[stad]} deelnemende praktijken
+                      </p>
+                    </div>
+                    <svg
+                      className="h-5 w-5 shrink-0 text-gray-300 transition-all group-hover:translate-x-0.5 group-hover:text-[#3585ff]"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 12h14M13 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-[#000000] text-white">
-        <div className="px-4 sm:px-6">
-          <div className="mx-auto max-w-[1320px] pt-14 sm:pt-16">
+        <div>
+          <div className="mx-auto w-full max-w-[1400px] px-4 pt-14 sm:px-6 sm:pt-16 lg:px-10">
             <div className="grid grid-cols-1 gap-10 pb-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-16">
               {/* Brand */}
               <div>
@@ -841,9 +867,6 @@ export default function WieIsMijnWaarnemerHomepage() {
                         <path d="M5 12h14M13 5l7 7-7 7" />
                       </svg>
                     </a>
-                  </li>
-                  <li>
-                    <a href="/account" className="text-[15px] text-white/85 transition-colors hover:text-white">Account aanmaken</a>
                   </li>
                   <li>
                     <a href="/voor-praktijken" className="text-[15px] text-white/85 transition-colors hover:text-white">Voor praktijken</a>
