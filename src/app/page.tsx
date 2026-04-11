@@ -273,6 +273,44 @@ export default function WieIsMijnWaarnemerHomepage() {
     return map;
   }, []);
 
+  const steps = useMemo(
+    () => [
+      {
+        n: 1,
+        title: "Zoek op naam",
+        text: "Typ de naam van uw huisartsenpraktijk of gebruik uw locatie.",
+        icon: (
+          <svg className="h-16 w-16 text-[#1d1d1b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
+        ),
+      },
+      {
+        n: 2,
+        title: "Zie de waarnemer",
+        text: "Direct duidelijk welke praktijk vandaag waarneemt.",
+        icon: (
+          <svg className="h-16 w-16 text-[#1d1d1b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <path d="M8 12l3 3 5-6" />
+          </svg>
+        ),
+      },
+      {
+        n: 3,
+        title: "Bel of bezoek",
+        text: "U heeft meteen het juiste adres en telefoonnummer.",
+        icon: (
+          <svg className="h-16 w-16 text-[#1d1d1b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z" />
+          </svg>
+        ),
+      },
+    ],
+    []
+  );
+
   const pickStad = (stad: string) => {
     setQuery(stad);
     setShowDropdown(true);
@@ -310,58 +348,61 @@ export default function WieIsMijnWaarnemerHomepage() {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={dismissLocationPrompt}
           />
-          <div className="relative w-full max-w-md origin-center animate-[popupIn_240ms_cubic-bezier(0.16,1,0.3,1)] rounded-2xl bg-white p-6 shadow-[0_24px_60px_-12px_rgba(15,23,40,0.35)] sm:p-8">
+          <div className="relative w-full max-w-[480px] origin-center animate-[popupIn_240ms_cubic-bezier(0.16,1,0.3,1)] rounded-sm bg-white p-6 shadow-[0_24px_60px_-12px_rgba(15,23,40,0.35)] sm:p-8">
             <button
               type="button"
               onClick={dismissLocationPrompt}
-              aria-label="Sluiten"
-              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-[#9ca3af] transition-colors hover:bg-black/[0.05] hover:text-[#0f1728]"
+              className="mb-5 inline-flex items-center text-[13px] font-medium text-[#4b5563] transition-colors hover:text-[#0f1728]"
             >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round">
-                <path d="M6 6l12 12M18 6L6 18" />
-              </svg>
+              Doorgaan zonder locatie
+              <span aria-hidden="true" className="ml-1">→</span>
             </button>
 
-            <div className="flex flex-col items-center text-center">
-              <span className="relative flex h-14 w-14 items-center justify-center">
-                <span className="absolute inset-0 animate-ping rounded-full bg-[#3585ff]/20" />
-                <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#eef4ff] text-[#3585ff]">
-                  <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
-                </span>
-              </span>
+            <div className="mb-5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo.png"
+                alt="Wieismijnwaarnemer"
+                className="h-9 w-auto"
+              />
+            </div>
 
-              <h2
-                id="location-prompt-title"
-                className="mt-5 text-[19px] font-semibold leading-snug text-[#0f1728] sm:text-[20px]"
+            <h2
+              id="location-prompt-title"
+              className="mb-3 text-[20px] font-semibold leading-snug text-[#1d1d1b] sm:text-[22px]"
+            >
+              Uw locatie. Uw keuze.
+            </h2>
+
+            <p className="text-[14px] leading-relaxed text-[#4b5563] sm:text-[14.5px]">
+              Net als veel andere diensten kunnen we uw locatie gebruiken om u beter van dienst te zijn. Zo laten we u direct de huisartsenpraktijken zien die het dichtst bij u in de buurt zijn.
+              <br />
+              <br />
+              Uw locatie wordt alleen op uw eigen apparaat gebruikt en nergens opgeslagen. U kunt deze keuze altijd later aanpassen in uw browserinstellingen. Lees ons volledige privacybeleid{" "}
+              <a href="#" className="underline transition-colors hover:text-[#1d1d1b]">
+                hier
+              </a>
+              .
+            </p>
+
+            <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:gap-3">
+              <button
+                type="button"
+                onClick={dismissLocationPrompt}
+                className="w-full border border-[#22222233] bg-[#eeeeee] px-5 py-3 text-[14px] font-medium text-[#444444] transition-colors hover:bg-[#e5e5e5] sm:w-auto sm:flex-1"
               >
-                Praktijken bij u in de buurt
-              </h2>
-              <p className="mt-2 text-[14px] leading-relaxed text-[#6b7280] sm:text-[14.5px]">
-                Mogen we uw locatie gebruiken om direct de dichtstbijzijnde huisartsenpraktijken te tonen? Uw locatie wordt niet opgeslagen.
-              </p>
-
-              <div className="mt-6 flex w-full flex-col-reverse gap-2 sm:flex-row sm:gap-3">
-                <button
-                  type="button"
-                  onClick={dismissLocationPrompt}
-                  className="w-full rounded-full border border-[#e5e7eb] bg-white px-5 py-3 text-[14px] font-medium text-[#4b5563] transition-colors hover:bg-[#f5f7fb] hover:text-[#0f1728]"
-                >
-                  Nee, bedankt
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLocationPromptOpen(false);
-                    handleLocate();
-                  }}
-                  className="w-full rounded-full bg-[#0f1728] px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:brightness-125"
-                >
-                  Ja, gebruik locatie
-                </button>
-              </div>
+                Meer informatie
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLocationPromptOpen(false);
+                  handleLocate();
+                }}
+                className="w-full border border-[#1d1d1b4d] bg-[#1d1d1b] px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:brightness-125 sm:w-auto sm:flex-1"
+              >
+                Accepteren
+              </button>
             </div>
           </div>
         </div>
@@ -704,48 +745,27 @@ export default function WieIsMijnWaarnemerHomepage() {
 
       {/* Zo werkt het */}
       <section className="bg-white py-20 sm:py-28 md:py-32">
-        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
-          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-20">
-            {/* Links: headline */}
-            <div className="lg:sticky lg:top-32 lg:self-start">
-              <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.14em] text-gray-400">
-                Zo werkt het
-              </p>
-              <h2 className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:text-4xl md:text-[2.75rem]">
-                In 3 stappen uw waarnemer vinden.
-              </h2>
-              <p className="mt-5 max-w-md text-base leading-relaxed text-gray-500 sm:text-lg">
-                Geen gedoe, geen gebel. Binnen dertig seconden ziet u waar u vandaag terechtkunt.
-              </p>
-            </div>
+        <div className="mx-auto w-full max-w-[1400px] px-4 text-center sm:px-6 lg:px-10">
+          <h2 className="mx-auto mb-16 max-w-3xl text-3xl font-semibold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:mb-20 sm:text-4xl md:text-[2.75rem] lg:mb-24">
+            In 3 stappen <span className="text-[#7ab0ff]">uw waarnemer vinden.</span>
+          </h2>
 
-            {/* Rechts: stappen */}
-            <ol className="flex flex-col">
-              {[
-                { n: "01", title: "Zoek op naam", text: "Typ de naam van uw huisartsenpraktijk of gebruik uw locatie." },
-                { n: "02", title: "Zie de waarnemer", text: "Direct duidelijk welke praktijk vandaag waarneemt." },
-                { n: "03", title: "Bel of bezoek", text: "U heeft meteen het juiste adres en telefoonnummer." },
-              ].map((step, i) => (
-                <li
-                  key={step.n}
-                  className={`flex gap-5 py-7 sm:gap-6 sm:py-8 ${
-                    i !== 0 ? "border-t border-gray-100" : ""
-                  }`}
-                >
-                  <span className="shrink-0 text-[13px] font-semibold tabular-nums text-gray-400">
-                    {step.n}
-                  </span>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 sm:text-xl">
-                      {step.title}
-                    </h3>
-                    <p className="mt-2 text-[15px] leading-relaxed text-gray-500 sm:text-base">
-                      {step.text}
-                    </p>
+          <div className="grid grid-cols-1 gap-12 md:grid-cols-3 md:gap-10 lg:gap-14">
+            {steps.map((step) => (
+              <div key={step.n} className="flex h-full flex-col items-center">
+                <div className="mb-6 flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-[#f5f5f4] sm:h-28 sm:w-28 md:h-32 md:w-32 lg:h-36 lg:w-36">
+                  <div className="scale-[0.6] sm:scale-[0.7] md:scale-[0.8]">
+                    {step.icon}
                   </div>
-                </li>
-              ))}
-            </ol>
+                </div>
+                <h3 className="mb-3 text-xl font-semibold text-gray-900 sm:text-2xl">
+                  {step.title}
+                </h3>
+                <p className="max-w-xs text-[15px] leading-relaxed text-gray-500 sm:text-base">
+                  {step.text}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -756,11 +776,8 @@ export default function WieIsMijnWaarnemerHomepage() {
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-20">
             {/* Links: headline */}
             <div className="lg:sticky lg:top-32 lg:self-start">
-              <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.14em] text-gray-400">
-                Regio&apos;s
-              </p>
               <h2 className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:text-4xl md:text-[2.75rem]">
-                Beschikbaar in uw regio.
+                Beschikbaar in <span className="text-[#7ab0ff]">uw regio.</span>
               </h2>
               <p className="mt-5 max-w-md text-base leading-relaxed text-gray-500 sm:text-lg">
                 {praktijken.length} deelnemende huisartsenpraktijken in {beschikbareSteden.length} {beschikbareSteden.length === 1 ? "stad" : "steden"}. Kies uw stad om direct alle praktijken te zien.
