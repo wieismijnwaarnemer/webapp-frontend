@@ -12,6 +12,85 @@ function normalize(s: string) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+function FlagIcon({ code }: { code: string }) {
+  const content = (() => {
+    switch (code) {
+      case "nl":
+        return (
+          <>
+            <rect width="16" height="16" fill="#AE1C28" />
+            <rect y="5.333" width="16" height="5.334" fill="#FFFFFF" />
+            <rect y="10.667" width="16" height="5.333" fill="#21468B" />
+          </>
+        );
+      case "en":
+        return (
+          <>
+            <rect width="16" height="16" fill="#012169" />
+            <path d="M0 0L16 16M16 0L0 16" stroke="white" strokeWidth="2.5" />
+            <path d="M0 0L16 16M16 0L0 16" stroke="#C8102E" strokeWidth="1.5" />
+            <path d="M8 0V16M0 8H16" stroke="white" strokeWidth="4" />
+            <path d="M8 0V16M0 8H16" stroke="#C8102E" strokeWidth="2.5" />
+          </>
+        );
+      case "tr":
+        return <rect width="16" height="16" fill="#E30A17" />;
+      case "pl":
+        return (
+          <>
+            <rect width="16" height="8" fill="#FFFFFF" />
+            <rect y="8" width="16" height="8" fill="#DC143C" />
+          </>
+        );
+      case "ar-sy":
+        return (
+          <>
+            <rect width="16" height="5.333" fill="#CE1126" />
+            <rect y="5.333" width="16" height="5.334" fill="#FFFFFF" />
+            <rect y="10.667" width="16" height="5.333" fill="#000000" />
+          </>
+        );
+      case "ar-ma":
+        return <rect width="16" height="16" fill="#C1272D" />;
+      case "fa-af":
+        return (
+          <>
+            <rect width="5.333" height="16" fill="#000000" />
+            <rect x="5.333" width="5.334" height="16" fill="#D32011" />
+            <rect x="10.667" width="5.333" height="16" fill="#007A36" />
+          </>
+        );
+      case "so":
+        return <rect width="16" height="16" fill="#4189DD" />;
+      case "uk":
+        return (
+          <>
+            <rect width="16" height="8" fill="#005BBB" />
+            <rect y="8" width="16" height="8" fill="#FFD500" />
+          </>
+        );
+      case "ru":
+        return (
+          <>
+            <rect width="16" height="5.333" fill="#FFFFFF" />
+            <rect y="5.333" width="16" height="5.334" fill="#0039A6" />
+            <rect y="10.667" width="16" height="5.333" fill="#D52B1E" />
+          </>
+        );
+      default:
+        return <rect width="16" height="16" fill="#e5e5e5" />;
+    }
+  })();
+
+  return (
+    <span className="flex h-4 w-4 shrink-0 overflow-hidden rounded-full">
+      <svg viewBox="0 0 16 16" className="h-full w-full" aria-hidden="true">
+        {content}
+      </svg>
+    </span>
+  );
+}
+
 function haversineKm(
   a: { lat: number; lng: number },
   b: { lat: number; lng: number }
@@ -41,10 +120,15 @@ export default function WieIsMijnWaarnemerHomepage() {
   const [geoError, setGeoError] = useState<string | null>(null);
   const [nearby, setNearby] = useState<PraktijkHit[] | null>(null);
   const [locationPromptOpen, setLocationPromptOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const [currentLang, setCurrentLang] = useState<
+    "tr" | "pl" | "ar-sy" | "ar-ma" | "fa-af" | "so" | "uk" | "ru" | "nl" | "en"
+  >("nl");
   const searchRef = useRef<HTMLDivElement>(null);
+  const langRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 80);
+    const onScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
@@ -94,12 +178,19 @@ export default function WieIsMijnWaarnemerHomepage() {
       setGeoError(null);
     };
     const onPointerDown = (e: PointerEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (searchRef.current && !searchRef.current.contains(target)) {
         closeAll();
+      }
+      if (langRef.current && !langRef.current.contains(target)) {
+        setLangOpen(false);
       }
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeAll();
+      if (e.key === "Escape") {
+        closeAll();
+        setLangOpen(false);
+      }
     };
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKey);
@@ -271,29 +362,120 @@ export default function WieIsMijnWaarnemerHomepage() {
       {/* Navbar */}
       <header className="fixed left-0 right-0 top-0 z-50">
         <nav
-          className={`relative transition-colors duration-300 ease-out ${
-            scrolled ? "bg-white" : "bg-transparent"
+          className={`relative transition-all duration-300 ease-out ${
+            scrolled ? "bg-white/60 backdrop-blur-xl" : "bg-transparent"
           }`}
         >
           <div
-            className={`pointer-events-none absolute inset-x-0 bottom-0 h-px bg-black/[0.08] transition-opacity duration-300 ${
+            className={`pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/20 transition-opacity duration-300 ${
               scrolled ? "opacity-100" : "opacity-0"
             }`}
           />
           <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
             <div className="flex h-[68px] items-center justify-between lg:h-[76px]">
               <a className="flex shrink-0 items-center" href="/">
-                <span className="text-[19px] font-semibold tracking-[-0.03em] text-[#1d1d1b] sm:text-[22px]">
-                  Wieismijnwaarnemer
-                </span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/logo.png"
+                  alt="Wieismijnwaarnemer"
+                  className="h-10 w-auto sm:h-12"
+                />
               </a>
 
-              <a
-                href="/aanmelden"
-                className="inline-flex items-center justify-center rounded-lg bg-[#1d1d1b] px-4 py-2.5 text-[13px] font-medium text-white transition-colors duration-200 hover:bg-[#1d1d1b]/85 sm:px-5 sm:py-3 sm:text-[14px]"
-              >
-                Voor praktijken
-              </a>
+              <div className="flex items-center gap-2 sm:gap-3">
+                {/* Taal-dropdown */}
+                <div ref={langRef} className="relative">
+                  {(() => {
+                    const langs: { code: typeof currentLang; label: string }[] = [
+                      { code: "tr", label: "Türkçe" },
+                      { code: "pl", label: "Polski" },
+                      { code: "ar-sy", label: "Syrisch" },
+                      { code: "ar-ma", label: "Marokkaans" },
+                      { code: "fa-af", label: "Afghaans" },
+                      { code: "so", label: "Soomaali" },
+                      { code: "uk", label: "Українська" },
+                      { code: "ru", label: "Русский" },
+                      { code: "nl", label: "Nederlands" },
+                      { code: "en", label: "English" },
+                    ];
+                    const current = langs.find((l) => l.code === currentLang)!;
+                    const shortCode = current.code.includes("-")
+                      ? current.code.split("-")[1].toUpperCase()
+                      : current.code.toUpperCase();
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setLangOpen((o) => !o)}
+                          aria-haspopup="listbox"
+                          aria-expanded={langOpen}
+                          className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-black/5"
+                        >
+                          <FlagIcon code={current.code} />
+                          <span className="text-[13px] font-normal uppercase text-[#1d1d1b]">
+                            {shortCode}
+                          </span>
+                          <svg
+                            width="9"
+                            height="6"
+                            viewBox="0 0 9 6"
+                            fill="none"
+                            className={`transition-transform duration-200 ${langOpen ? "rotate-180" : ""}`}
+                          >
+                            <path
+                              d="M8.1 1.61L4.78 5.03a.75.75 0 0 1-1.06 0L.4 1.61a.5.5 0 0 1 .35-.86h7a.5.5 0 0 1 .35.86z"
+                              fill="#1D1D1B"
+                            />
+                          </svg>
+                        </button>
+                        {langOpen && (
+                          <div className="absolute right-0 top-full z-50 pt-2 animate-[dropdownIn_160ms_ease-out]">
+                            <div className="w-[280px] rounded-xl border border-[#e5e5e5] bg-white p-5 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+                              <p className="mb-3 text-[13px] font-medium text-[#1d1d1b]">
+                                Kies je taal
+                              </p>
+                              <div className="flex flex-col gap-1">
+                                {langs.map((l) => {
+                                  const active = l.code === currentLang;
+                                  return (
+                                    <button
+                                      key={l.code}
+                                      type="button"
+                                      onClick={() => {
+                                        setCurrentLang(l.code);
+                                        setLangOpen(false);
+                                      }}
+                                      className={`flex items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors ${
+                                        active ? "bg-[#f5f5f5]" : "hover:bg-[#f5f5f5]"
+                                      }`}
+                                    >
+                                      <FlagIcon code={l.code} />
+                                      <span
+                                        className={`text-[13px] ${
+                                          active ? "text-[#1d1d1b]" : "text-[#1d1d1b]/60"
+                                        }`}
+                                      >
+                                        {l.label}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+
+                <a
+                  href="/aanmelden"
+                  className="hidden items-center justify-center rounded-lg bg-[#1d1d1b] px-5 py-3 text-[14px] font-medium text-white transition-colors duration-200 hover:bg-[#1d1d1b]/85 sm:inline-flex"
+                >
+                  Voor praktijken
+                </a>
+              </div>
             </div>
           </div>
         </nav>
@@ -302,35 +484,31 @@ export default function WieIsMijnWaarnemerHomepage() {
       {/* Hero */}
       <section className="px-2 pb-2 pt-[72px] sm:px-3 sm:pb-3 sm:pt-[76px] lg:pt-[80px]">
         <div className="relative mx-auto flex min-h-[calc(100vh-80px-1.5rem)] w-full max-w-[1600px] flex-col rounded-3xl bg-[linear-gradient(135deg,#f0eafc_0%,#f5f0ff_40%,#eee8fb_100%)] lg:rounded-[2.5rem]">
-          {/* Geclipte visuele laag: decor + banner afbeelding */}
-          <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl lg:rounded-[2.5rem]">
-            <div className="absolute -left-20 -top-20 h-[400px] w-[400px] rounded-full bg-[#e4d4fb]/40" />
-            <div className="absolute -bottom-32 -right-20 h-[500px] w-[500px] rounded-full bg-[#d8ccf6]/30" />
-            <div className="absolute left-[40%] top-[20%] h-[300px] w-[300px] rounded-full bg-[#ede3ff]/50" />
-            <div className="absolute bottom-[15%] left-[15%] h-[200px] w-[200px] rounded-full bg-[#f3eaff]/60" />
-
-            <div className="absolute bottom-0 left-1/2 flex -translate-x-1/2 justify-center lg:left-auto lg:right-[5%] lg:translate-x-0 xl:right-[8%]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/banner.png"
-                alt="Wieismijnwaarnemer"
-                className="block h-auto max-h-[42vh] w-auto object-contain sm:max-h-[44vh] lg:max-h-[calc(100vh-12rem)]"
-                loading="eager"
-              />
-            </div>
+          {/* Achtergrond-afbeelding laag */}
+          <div
+            className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl bg-cover bg-right bg-no-repeat lg:rounded-[2.5rem] lg:bg-center"
+            style={{ backgroundImage: "url('/hero.png')" }}
+          >
+            {/* Donkere leesbaarheidsoverlay */}
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,40,0.55)_0%,rgba(15,23,40,0.45)_50%,rgba(15,23,40,0.65)_100%)] lg:bg-[linear-gradient(90deg,rgba(15,23,40,0.75)_0%,rgba(15,23,40,0.65)_30%,rgba(15,23,40,0.45)_55%,rgba(15,23,40,0.3)_100%)]" />
+            {/* Extra vignet links op desktop voor tekstleesbaarheid */}
+            <div className="absolute inset-0 hidden lg:block lg:bg-[radial-gradient(ellipse_70%_90%_at_20%_50%,rgba(15,23,40,0.45)_0%,rgba(15,23,40,0)_70%)]" />
           </div>
 
-          <div className="relative mx-auto flex w-full max-w-[1400px] flex-1 flex-col justify-center px-4 pb-[48vh] pt-28 sm:px-6 sm:pb-[50vh] sm:pt-32 md:pt-36 lg:px-10 lg:py-0 lg:pb-0">
+          <div className="relative mx-auto flex w-full max-w-[1400px] flex-1 flex-col justify-center px-4 py-20 sm:px-6 sm:py-24 md:py-28 lg:px-10 lg:py-0">
             <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[1.35fr_1fr] lg:gap-16">
               {/* Content */}
               <div className="flex flex-col text-center lg:text-left">
-                <h1 className="text-[2rem] font-semibold leading-[1.1] tracking-[-0.035em] text-[#0f1728] sm:text-[2.4rem] md:text-[2.75rem] lg:text-[3rem] xl:text-[3.4rem]">
+                <h1 className="text-[2rem] font-semibold leading-[1.1] tracking-[-0.035em] text-white sm:text-[2.4rem] md:text-[2.75rem] lg:text-[3rem] xl:text-[3.4rem]">
                   Is uw huisarts gesloten?
                   <br />
-                  <span className="text-[#3585ff]">Vind hier direct uw waarnemer.</span>
+                  <span className="text-[#7ab0ff]">Vind hier direct uw waarnemer.</span>
                 </h1>
 
-                <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-[#4b5563] sm:mt-6 sm:text-lg lg:mx-0">
+                <p
+                  className="mx-auto mt-4 max-w-xl text-[17px] font-medium leading-relaxed text-white sm:mt-6 sm:text-[19px] lg:mx-0"
+                  style={{ textShadow: "0 1px 12px rgba(15,23,40,0.55)" }}
+                >
                   Zoek uw huisartsenpraktijk en zie direct welke arts vandaag waarneemt.
                 </p>
 
@@ -502,10 +680,10 @@ export default function WieIsMijnWaarnemerHomepage() {
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.922-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.175 0l-3.37 2.448c-.784.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.05 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z" />
                         </svg>
                       ))}
-                      <span className="ml-1.5 text-[12px] font-semibold text-[#0f1728]">4.9</span>
+                      <span className="ml-1.5 text-[12px] font-semibold text-white">4.9</span>
                     </div>
-                    <p className="text-[12px] text-[#6b7280]">
-                      Vertrouwd door <span className="font-semibold text-[#0f1728]">10.000+</span> patiënten
+                    <p className="text-[12px] text-white/75">
+                      Vertrouwd door <span className="font-semibold text-white">10.000+</span> patiënten
                     </p>
                   </div>
                 </div>
@@ -612,10 +790,16 @@ export default function WieIsMijnWaarnemerHomepage() {
             <div className="grid grid-cols-1 gap-10 pb-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-16">
               {/* Brand */}
               <div>
-                <a href="/" className="text-[20px] font-semibold tracking-[-0.02em] text-white">
-                  Wieismijnwaarnemer
+                <a href="/" className="inline-block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/logo.png"
+                    alt="Wieismijnwaarnemer"
+                    className="h-9 w-auto sm:h-10"
+                    style={{ filter: "brightness(0) invert(1)" }}
+                  />
                 </a>
-                <p className="mt-3 max-w-sm text-[14px] leading-relaxed text-white/70">
+                <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-white/70">
                   Vind snel welke huisartspraktijk waarneemt wanneer uw eigen huisarts afwezig is.
                 </p>
               </div>
