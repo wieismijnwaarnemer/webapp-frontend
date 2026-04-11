@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import {
   zoekPraktijken,
-  getPractice,
-  getSuggestedPartners,
-  practices as allPractices,
-} from "@/lib/mock-data";
-import type { Practice } from "@/lib/mock-data";
+  getPraktijk,
+  getNearestPraktijken,
+  type Praktijk,
+} from "@/lib/praktijk-search";
+import { praktijken as allPractices } from "@/data/praktijken";
 
 const DAYS = [
   "Maandag",
@@ -52,12 +52,13 @@ const STEP_LABELS = [
   "Waarnemers",
   "Openingstijden",
   "Klaar",
+  "Wachtwoord",
 ];
 
 export default function AanmeldenPage() {
   const [step, setStep] = useState(0);
   const [query, setQuery] = useState("");
-  const [selectedPractice, setSelectedPractice] = useState<Practice | null>(null);
+  const [selectedPractice, setSelectedPractice] = useState<Praktijk | null>(null);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpSent, setOtpSent] = useState(false);
@@ -69,6 +70,11 @@ export default function AanmeldenPage() {
     ...DEFAULT_SCHEDULE,
   });
   const [selectedFeestdagen, setSelectedFeestdagen] = useState<string[]>([]);
+  const [customClosures, setCustomClosures] = useState<string[]>([]);
+  const [newClosureDate, setNewClosureDate] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -78,10 +84,10 @@ export default function AanmeldenPage() {
 
   const results = zoekPraktijken(query);
   const partners = selectedPractice
-    ? getSuggestedPartners(selectedPractice.id)
+    ? getNearestPraktijken(selectedPractice.id, 4)
     : [];
 
-  const claimPractice = (p: Practice) => {
+  const claimPractice = (p: Praktijk) => {
     setSelectedPractice(p);
     setQuery(p.naam);
     setStep(1);
@@ -115,6 +121,60 @@ export default function AanmeldenPage() {
   const selectAllFeestdagen = () => {
     setSelectedFeestdagen(FEESTDAGEN.map((f) => f.naam));
   };
+
+  const addCustomClosure = () => {
+    if (!newClosureDate) return;
+    setCustomClosures((prev) =>
+      prev.includes(newClosureDate) ? prev : [...prev, newClosureDate].sort()
+    );
+    setNewClosureDate("");
+  };
+
+  const removeCustomClosure = (date: string) => {
+    setCustomClosures((prev) => prev.filter((d) => d !== date));
+  };
+
+  const formatClosureDate = (iso: string) => {
+    const d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("nl-NL", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const passwordScore = (() => {
+    let score = 0;
+    if (password.length >= 8) score += 1;
+    if (password.length >= 12) score += 1;
+    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1;
+    if (/\d/.test(password)) score += 1;
+    if (/[^A-Za-z0-9]/.test(password)) score += 1;
+    return Math.min(score, 4);
+  })();
+
+  const passwordStrengthLabel = password.length === 0
+    ? ""
+    : passwordScore <= 1
+      ? "Zwak"
+      : passwordScore === 2
+        ? "Redelijk"
+        : passwordScore === 3
+          ? "Goed"
+          : "Sterk";
+
+  const passwordStrengthColor =
+    passwordScore <= 1
+      ? "bg-red-400"
+      : passwordScore === 2
+        ? "bg-orange-400"
+        : passwordScore === 3
+          ? "bg-yellow-400"
+          : "bg-green-500";
+
+  const passwordsMatch =
+    password.length > 0 && password === passwordConfirm;
+  const canSubmitPassword = password.length >= 8 && passwordsMatch;
 
   return (
     <div className="min-h-screen bg-white">
@@ -254,7 +314,7 @@ export default function AanmeldenPage() {
                               {p.naam}
                             </div>
                             <div className="truncate text-[13px] text-gray-500">
-                              {p.adres}, {p.postcode}
+                              {p.straat}, {p.postcode} {p.plaats}
                             </div>
                           </div>
                           <svg
@@ -314,7 +374,7 @@ export default function AanmeldenPage() {
                     {selectedPractice?.naam}
                   </div>
                   <div className="truncate text-[12px] text-gray-500">
-                    {selectedPractice?.adres}
+                    {selectedPractice?.straat}
                   </div>
                 </div>
               </div>
@@ -508,7 +568,7 @@ export default function AanmeldenPage() {
                           {p.naam}
                         </div>
                         <div className="truncate text-[12px] text-gray-500 sm:text-[13px]">
-                          {p.adres} · {p.telefoon}
+                          {p.straat}, {p.plaats} · {p.telefoon}
                         </div>
                       </div>
                     </button>
@@ -615,7 +675,7 @@ export default function AanmeldenPage() {
                                   {p.naam}
                                 </div>
                                 <div className="truncate text-[12px] text-gray-500">
-                                  {p.adres}, {p.postcode}
+                                  {p.straat}, {p.postcode} {p.plaats}
                                 </div>
                               </div>
                             </button>
@@ -637,7 +697,7 @@ export default function AanmeldenPage() {
                   </p>
                   <div className="space-y-2">
                     {selectedPartners.map((id, index) => {
-                      const p = getPractice(id);
+                      const p = getPraktijk(id);
                       if (!p) return null;
                       const isFirst = index === 0;
                       const isLast = index === selectedPartners.length - 1;
@@ -660,7 +720,7 @@ export default function AanmeldenPage() {
                               {p.naam}
                             </div>
                             <div className="truncate text-[12px] text-gray-500">
-                              {p.adres}
+                              {p.straat}
                             </div>
                           </div>
                           <div className="flex shrink-0 items-center gap-0.5">
@@ -903,6 +963,82 @@ export default function AanmeldenPage() {
                 </div>
               </div>
 
+              {/* Eigen sluitingsdagen */}
+              <div className="mt-8">
+                <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.1em] text-gray-400">
+                  Extra sluitingsdagen
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="date"
+                    value={newClosureDate}
+                    onChange={(e) => setNewClosureDate(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addCustomClosure();
+                      }
+                    }}
+                    className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 outline-none transition-colors focus:border-[#3585ff] focus:shadow-[0_0_0_3px_rgba(53,133,255,0.1)] sm:text-[15px]"
+                  />
+                  <button
+                    type="button"
+                    onClick={addCustomClosure}
+                    disabled={!newClosureDate}
+                    className="rounded-xl bg-[#1d1d1b] px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100 sm:text-[15px]"
+                  >
+                    Toevoegen
+                  </button>
+                </div>
+
+                {customClosures.length > 0 && (
+                  <ul className="mt-3 space-y-1.5">
+                    {customClosures.map((date) => (
+                      <li
+                        key={date}
+                        className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3.5 py-2.5"
+                      >
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#eef4ff] text-[#3585ff]">
+                          <svg
+                            className="h-3.5 w-3.5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2.2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect x="3" y="4" width="18" height="18" rx="2" />
+                            <path d="M16 2v4M8 2v4M3 10h18" />
+                          </svg>
+                        </span>
+                        <span className="flex-1 truncate text-[13px] font-medium text-gray-900 sm:text-[14px]">
+                          {formatClosureDate(date)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeCustomClosure(date)}
+                          aria-label="Verwijderen"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                        >
+                          <svg
+                            className="h-3.5 w-3.5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2.4}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M6 6l12 12M18 6L6 18" />
+                          </svg>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
               {/* CSV upload */}
               <label className="mt-6 flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-4 transition-colors hover:border-[#3585ff] hover:bg-[#f6faff] sm:px-5 sm:py-5">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-[#3585ff] shadow-sm sm:h-12 sm:w-12">
@@ -992,7 +1128,7 @@ export default function AanmeldenPage() {
                     {selectedPractice.naam}
                   </div>
                   <div className="mt-0.5 text-[13px] text-gray-500">
-                    {selectedPractice.adres}, {selectedPractice.postcode}
+                    {selectedPractice.straat}, {selectedPractice.postcode} {selectedPractice.plaats}
                   </div>
 
                   {selectedPartners.length > 0 && (
@@ -1001,7 +1137,7 @@ export default function AanmeldenPage() {
                         Waarnemers
                       </p>
                       {selectedPartners.map((id, index) => {
-                        const p = getPractice(id);
+                        const p = getPraktijk(id);
                         if (!p) return null;
                         return (
                           <div
@@ -1022,7 +1158,7 @@ export default function AanmeldenPage() {
                                 {p.naam}
                               </div>
                               <div className="truncate text-[12px] text-gray-500">
-                                {p.adres} · {p.telefoon}
+                                {p.straat}, {p.plaats} · {p.telefoon}
                               </div>
                             </div>
                           </div>
@@ -1057,22 +1193,197 @@ export default function AanmeldenPage() {
                         );
                       })}
                     </div>
-                    {selectedFeestdagen.length > 0 && (
-                      <div className="mt-3 border-t border-gray-100 pt-3 text-[12px] text-gray-400">
-                        + {selectedFeestdagen.length} feestdag
-                        {selectedFeestdagen.length !== 1 ? "en" : ""} gesloten
+                    {(selectedFeestdagen.length > 0 || customClosures.length > 0) && (
+                      <div className="mt-3 space-y-1 border-t border-gray-100 pt-3 text-[12px] text-gray-400">
+                        {selectedFeestdagen.length > 0 && (
+                          <div>
+                            + {selectedFeestdagen.length} feestdag
+                            {selectedFeestdagen.length !== 1 ? "en" : ""} gesloten
+                          </div>
+                        )}
+                        {customClosures.length > 0 && (
+                          <div>
+                            + {customClosures.length} extra sluitingsdag
+                            {customClosures.length !== 1 ? "en" : ""}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              <a
-                href="/"
-                className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-[#1d1d1b] px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:brightness-125 sm:w-auto sm:text-[15px]"
+              <button
+                type="button"
+                onClick={() => setStep(5)}
+                className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1d1d1b] px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:brightness-125 sm:w-auto sm:text-[15px]"
               >
-                Bekijk mijn praktijk op de site
-              </a>
+                Ga verder
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M5 12h14M13 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          {/* Stap 6 — Wachtwoord instellen */}
+          {step === 5 && (
+            <div>
+              <h1 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.02em] text-gray-900 sm:text-[32px] md:text-[36px]">
+                Stel uw <span className="text-[#7ab0ff]">wachtwoord in.</span>
+              </h1>
+              <p className="mt-3 text-[15px] leading-relaxed text-gray-500 sm:text-base">
+                Beveilig uw account met een wachtwoord zodat u uw praktijk kunt beheren.
+              </p>
+
+              <div className="mt-8 space-y-5">
+                {/* Email (readonly context) */}
+                {email && (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 sm:px-5">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-400">
+                      E-mailadres
+                    </div>
+                    <div className="mt-1 truncate text-[14px] font-semibold text-gray-900">
+                      {email}
+                    </div>
+                  </div>
+                )}
+
+                {/* Wachtwoord */}
+                <div>
+                  <label className="mb-2 block text-[13px] font-medium text-gray-900">
+                    Wachtwoord
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Minimaal 8 tekens"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3.5 pr-12 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors focus:border-[#3585ff] focus:shadow-[0_0_0_3px_rgba(53,133,255,0.1)] sm:text-[16px]"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      aria-label={showPassword ? "Verberg wachtwoord" : "Toon wachtwoord"}
+                      className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                    >
+                      {showPassword ? (
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                          <path d="M1 1l22 22" />
+                        </svg>
+                      ) : (
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Sterkte-balk */}
+                  {password.length > 0 && (
+                    <div className="mt-3">
+                      <div className="flex items-center gap-1.5">
+                        {[0, 1, 2, 3].map((i) => (
+                          <div
+                            key={i}
+                            className={`h-1 flex-1 rounded-full transition-colors ${
+                              i < passwordScore ? passwordStrengthColor : "bg-gray-100"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <div className="mt-1.5 flex items-center justify-between text-[12px]">
+                        <span className="text-gray-400">
+                          Sterkte: <span className="font-medium text-gray-700">{passwordStrengthLabel}</span>
+                        </span>
+                        {password.length < 8 && (
+                          <span className="text-gray-400">
+                            Nog {8 - password.length} teken{8 - password.length !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Wachtwoord bevestigen */}
+                <div>
+                  <label className="mb-2 block text-[13px] font-medium text-gray-900">
+                    Herhaal wachtwoord
+                  </label>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={passwordConfirm}
+                    onChange={(e) => setPasswordConfirm(e.target.value)}
+                    placeholder="Vul uw wachtwoord nogmaals in"
+                    className={`w-full rounded-xl border bg-white px-4 py-3.5 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors focus:shadow-[0_0_0_3px_rgba(53,133,255,0.1)] sm:text-[16px] ${
+                      passwordConfirm.length > 0 && !passwordsMatch
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-gray-200 focus:border-[#3585ff]"
+                    }`}
+                  />
+                  {passwordConfirm.length > 0 && !passwordsMatch && (
+                    <p className="mt-2 text-[12px] font-medium text-red-500">
+                      De wachtwoorden komen niet overeen.
+                    </p>
+                  )}
+                  {passwordConfirm.length > 0 && passwordsMatch && (
+                    <p className="mt-2 flex items-center gap-1 text-[12px] font-medium text-green-600">
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                      Wachtwoorden komen overeen
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-10 flex flex-col-reverse gap-2.5 sm:flex-row sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep(4)}
+                  className="w-full rounded-xl border border-gray-200 bg-white px-5 py-3.5 text-[14px] font-medium text-gray-600 transition-colors hover:bg-gray-50 sm:w-auto"
+                >
+                  Terug
+                </button>
+                <a
+                  href={canSubmitPassword ? "/portaal/dashboard" : undefined}
+                  aria-disabled={!canSubmitPassword}
+                  onClick={(e) => {
+                    if (!canSubmitPassword) e.preventDefault();
+                  }}
+                  className={`inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1d1d1b] px-5 py-3.5 text-[14px] font-semibold text-white transition-colors sm:flex-1 sm:text-[15px] ${
+                    canSubmitPassword
+                      ? "hover:brightness-125"
+                      : "cursor-not-allowed opacity-40"
+                  }`}
+                >
+                  Open mijn dashboard
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M5 12h14M13 5l7 7-7 7" />
+                  </svg>
+                </a>
+              </div>
             </div>
           )}
         </div>
