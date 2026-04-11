@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { praktijken, type Praktijk } from "@/data/praktijken";
+import { useRouter } from "next/navigation";
+import {
+  allePraktijken,
+  type PraktijkDetails,
+} from "@/data/praktijk-extras";
+import { zoekPraktijken } from "@/lib/praktijk-search";
 
-type PraktijkHit = Praktijk & { afstandKm?: number };
-
-function normalize(s: string) {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
+type PraktijkHit = PraktijkDetails & { afstandKm?: number };
 
 function FlagIcon({ code }: { code: string }) {
   const content = (() => {
@@ -108,11 +106,12 @@ function haversineKm(
 }
 
 // Maximale afstand waarop we een praktijk nog als "in de buurt" beschouwen.
-const MAX_NEARBY_KM = 15;
+const MAX_NEARBY_KM = 4;
 // Als de geolocation-accuracy slechter is dan dit, vertrouwen we het niet.
 const MIN_ACCURACY_M = 10_000;
 
 export default function WieIsMijnWaarnemerHomepage() {
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [query, setQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -159,16 +158,7 @@ export default function WieIsMijnWaarnemerHomepage() {
   }, []);
 
   const typedMatches = useMemo<PraktijkHit[]>(() => {
-    const q = normalize(query.trim());
-    if (q.length < 2) return [];
-    return praktijken
-      .filter((p) => {
-        const hay = normalize(
-          `${p.naam} ${p.straat} ${p.postcode} ${p.plaats} ${p.stad}`
-        );
-        return hay.includes(q);
-      })
-      .slice(0, 6);
+    return zoekPraktijken(query, 8);
   }, [query]);
 
   useEffect(() => {
@@ -220,7 +210,7 @@ export default function WieIsMijnWaarnemerHomepage() {
           );
           return;
         }
-        const sorted = praktijken
+        const sorted = allePraktijken
           .map((p) => ({
             ...p,
             afstandKm: haversineKm(
@@ -253,21 +243,29 @@ export default function WieIsMijnWaarnemerHomepage() {
     );
   };
 
-  const pickPraktijk = (p: Praktijk) => {
-    setQuery(p.naam);
+  const pickPraktijk = (p: PraktijkDetails) => {
     setShowDropdown(false);
     setNearby(null);
+    router.push(`/praktijk/${p.id}`);
+  };
+
+  const submitSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const first = (nearby && nearby[0]) ?? typedMatches[0];
+    if (first) {
+      pickPraktijk(first);
+    }
   };
 
   const beschikbareSteden = useMemo(() => {
     const set = new Set<string>();
-    for (const p of praktijken) set.add(p.stad);
+    for (const p of allePraktijken) set.add(p.stad);
     return Array.from(set).sort((a, b) => a.localeCompare(b, "nl"));
   }, []);
 
   const praktijkCountPerStad = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const p of praktijken) {
+    for (const p of allePraktijken) {
       map[p.stad] = (map[p.stad] ?? 0) + 1;
     }
     return map;
@@ -323,9 +321,13 @@ export default function WieIsMijnWaarnemerHomepage() {
 
   const dropdownList: PraktijkHit[] = nearby ?? typedMatches;
   const showNearbyHeader = nearby !== null && nearby.length > 0;
+  const hasTypedQuery = query.trim().length >= 1;
   const dropdownOpen =
     showDropdown &&
-    (dropdownList.length > 0 || geoError !== null || geoLoading);
+    (dropdownList.length > 0 ||
+      geoError !== null ||
+      geoLoading ||
+      hasTypedQuery);
 
   const dismissLocationPrompt = () => {
     setLocationPromptOpen(false);
@@ -348,60 +350,42 @@ export default function WieIsMijnWaarnemerHomepage() {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={dismissLocationPrompt}
           />
-          <div className="relative w-full max-w-[480px] origin-center animate-[popupIn_240ms_cubic-bezier(0.16,1,0.3,1)] rounded-sm bg-white p-6 shadow-[0_24px_60px_-12px_rgba(15,23,40,0.35)] sm:p-8">
-            <button
-              type="button"
-              onClick={dismissLocationPrompt}
-              className="mb-5 inline-flex items-center text-[13px] font-medium text-[#4b5563] transition-colors hover:text-[#0f1728]"
-            >
-              Doorgaan zonder locatie
-              <span aria-hidden="true" className="ml-1">→</span>
-            </button>
-
-            <div className="mb-5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/logo.png"
-                alt="Wieismijnwaarnemer"
-                className="h-9 w-auto"
-              />
+          <div className="relative w-full max-w-[420px] origin-center animate-[popupIn_240ms_cubic-bezier(0.16,1,0.3,1)] rounded-2xl bg-white p-6 shadow-[0_24px_60px_-12px_rgba(15,23,40,0.35)] sm:p-7">
+            <div className="flex flex-col items-center text-center">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#eef4ff] text-[#3585ff]">
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+              </span>
+              <h2
+                id="location-prompt-title"
+                className="mt-4 text-[18px] font-semibold leading-snug text-[#1d1d1b] sm:text-[19px]"
+              >
+                Praktijken in uw buurt tonen?
+              </h2>
+              <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#6b7280]">
+                Met uw locatie tonen we direct de dichtstbijzijnde huisartsen. Uw locatie blijft op uw apparaat.
+              </p>
             </div>
 
-            <h2
-              id="location-prompt-title"
-              className="mb-3 text-[20px] font-semibold leading-snug text-[#1d1d1b] sm:text-[22px]"
-            >
-              Uw locatie. Uw keuze.
-            </h2>
-
-            <p className="text-[14px] leading-relaxed text-[#4b5563] sm:text-[14.5px]">
-              Net als veel andere diensten kunnen we uw locatie gebruiken om u beter van dienst te zijn. Zo laten we u direct de huisartsenpraktijken zien die het dichtst bij u in de buurt zijn.
-              <br />
-              <br />
-              Uw locatie wordt alleen op uw eigen apparaat gebruikt en nergens opgeslagen. U kunt deze keuze altijd later aanpassen in uw browserinstellingen. Lees ons volledige privacybeleid{" "}
-              <a href="#" className="underline transition-colors hover:text-[#1d1d1b]">
-                hier
-              </a>
-              .
-            </p>
-
-            <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:gap-3">
-              <button
-                type="button"
-                onClick={dismissLocationPrompt}
-                className="w-full border border-[#22222233] bg-[#eeeeee] px-5 py-3 text-[14px] font-medium text-[#444444] transition-colors hover:bg-[#e5e5e5] sm:w-auto sm:flex-1"
-              >
-                Meer informatie
-              </button>
+            <div className="mt-6 flex flex-col gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setLocationPromptOpen(false);
                   handleLocate();
                 }}
-                className="w-full border border-[#1d1d1b4d] bg-[#1d1d1b] px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:brightness-125 sm:w-auto sm:flex-1"
+                className="w-full rounded-xl bg-[#1d1d1b] px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:brightness-125"
               >
-                Accepteren
+                Sta toe
+              </button>
+              <button
+                type="button"
+                onClick={dismissLocationPrompt}
+                className="w-full rounded-xl border border-gray-200 bg-white px-5 py-3 text-[14px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                Nee, bedankt
               </button>
             </div>
           </div>
@@ -563,7 +547,10 @@ export default function WieIsMijnWaarnemerHomepage() {
 
                 <div className="mx-auto mt-8 w-full max-w-[760px] lg:mx-0">
                   <div ref={searchRef} className="relative">
-                    <div className="flex flex-col gap-2 rounded-2xl border border-white/80 bg-white p-2 shadow-[0_12px_40px_-8px_rgba(15,23,40,0.18)] ring-1 ring-black/5 transition-all focus-within:shadow-[0_16px_50px_-8px_rgba(53,133,255,0.25)] focus-within:ring-[#3585ff]/30 lg:flex-row lg:items-center">
+                    <form
+                      onSubmit={submitSearch}
+                      className="flex flex-col gap-2 rounded-2xl border border-white/80 bg-white p-2 shadow-[0_12px_40px_-8px_rgba(15,23,40,0.18)] ring-1 ring-black/5 transition-all focus-within:shadow-[0_16px_50px_-8px_rgba(53,133,255,0.25)] focus-within:ring-[#3585ff]/30 lg:flex-row lg:items-center"
+                    >
                       <div className="flex flex-1 items-center pl-3">
                         <svg className="mr-3 h-5 w-5 shrink-0 text-[#9ca3af]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -578,14 +565,17 @@ export default function WieIsMijnWaarnemerHomepage() {
                             setNearby(null);
                           }}
                           onFocus={() => setShowDropdown(true)}
-                          placeholder="Zoek uw huisartsenpraktijk (bijv. De Gors Purmerend)"
+                          placeholder="Zoek uw huisartsenpraktijk (bijv. Huisartspraktijk Milad)"
                           className="w-full bg-transparent py-3 pr-2 text-[15px] text-[#0f1728] placeholder:text-[#9ca3af] outline-none"
                         />
                       </div>
-                      <button className="w-full shrink-0 rounded-xl bg-[#1d1d1b] px-6 py-3.5 text-[14px] font-medium text-white transition-colors duration-200 hover:bg-[#1d1d1b]/85 lg:w-auto">
+                      <button
+                        type="submit"
+                        className="w-full shrink-0 rounded-xl bg-[#1d1d1b] px-6 py-3.5 text-[14px] font-medium text-white transition-colors duration-200 hover:bg-[#1d1d1b]/85 lg:w-auto"
+                      >
                         Zoek
                       </button>
-                    </div>
+                    </form>
 
 
                     {dropdownOpen && (
@@ -703,7 +693,7 @@ export default function WieIsMijnWaarnemerHomepage() {
                             ))}
                           </ul>
                         )}
-                        {!geoLoading && !geoError && dropdownList.length === 0 && query.trim().length >= 2 && (
+                        {!geoLoading && !geoError && dropdownList.length === 0 && query.trim().length >= 1 && (
                           <div className="px-4 py-3 text-[13px] text-[#6b7280]">
                             Geen praktijken gevonden voor &ldquo;{query}&rdquo;.
                           </div>
@@ -778,7 +768,7 @@ export default function WieIsMijnWaarnemerHomepage() {
                 Beschikbaar in <span className="text-[#7ab0ff]">uw regio.</span>
               </h2>
               <p className="mt-5 max-w-md text-base leading-relaxed text-gray-500 sm:text-lg">
-                {praktijken.length} deelnemende huisartsenpraktijken in {beschikbareSteden.length} {beschikbareSteden.length === 1 ? "stad" : "steden"}. Kies uw stad om direct alle praktijken te zien.
+                {allePraktijken.length} deelnemende huisartsenpraktijken in {beschikbareSteden.length} {beschikbareSteden.length === 1 ? "stad" : "steden"}. Kies uw stad om direct alle praktijken te zien.
               </p>
             </div>
 
