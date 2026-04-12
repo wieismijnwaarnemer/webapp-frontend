@@ -569,7 +569,7 @@ export default function WieIsMijnWaarnemerHomepage() {
             {/* Links: logo + widget embed (3/5) */}
             <div className="lg:col-span-3">
               {/* Moet ik naar de dokter? logo */}
-              <div className="mb-8 flex justify-center">
+              <div className="mb-8 flex flex-col items-center gap-3">
                 <a
                   href="https://moetiknaardedokter.nl/?utm_source=widget&utm_medium=referral&utm_campaign=logo"
                   target="_blank"
@@ -580,9 +580,10 @@ export default function WieIsMijnWaarnemerHomepage() {
                   <img
                     src="/MoetIkNaarDeDokter_RGB-300x64.png"
                     alt="Moet ik naar de dokter?"
-                    className="h-14 w-auto sm:h-16"
+                    className="h-14 w-auto sm:h-16 lg:h-20"
                   />
                 </a>
+                <p className="text-sm text-white/50">Klik om naar Moet ik naar de dokter? te gaan</p>
               </div>
               <div className="overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
                 <div
