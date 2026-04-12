@@ -148,7 +148,7 @@ const langs: { code: Locale; label: string }[] = [
   { code: "pl", label: "Polski" },
   { code: "ru", label: "Русский" },
   { code: "so", label: "Soomaali" },
-  { code: "nl-sr", label: "Surinaams" },
+  { code: "nl-sr", label: "Sranantongo" },
   { code: "ar-sy", label: "Syrisch (العربية)" },
   { code: "tr", label: "Türkçe" },
   { code: "uk", label: "Українська" },
