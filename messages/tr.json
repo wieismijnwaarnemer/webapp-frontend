@@ -119,7 +119,8 @@
   "hapBanner": {
     "message": "Bekleyemeyecek acil şikayetleriniz mi var? Bölgenizdeki nöbetçi aile hekimini arayın.",
     "detecting": "Konum aranıyor…",
-    "generic": "Kendi aile hekiminizi arayın — telesekreter doğru numarayı verecektir."
+    "generic": "Kendi aile hekiminizi arayın — telesekreter doğru numarayı verecektir.",
+    "emergency": "Acil durumlarda her zaman 112'yi arayın"
   },
   "days": {
     "ma": "Pazartesi",

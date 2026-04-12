@@ -156,21 +156,33 @@ export default function HapBanner() {
     // Auto-detect location silently (only if permission already granted)
     if (!navigator.geolocation || !("permissions" in navigator)) return;
 
+    // Try to detect location — works if permission is already granted
+    // or if the user allows it when prompted via the search bar
+    const tryDetect = () => {
+      setDetecting(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const nearest = findNearestHap(pos.coords.latitude, pos.coords.longitude);
+          setHap(nearest);
+          setDetecting(false);
+        },
+        () => setDetecting(false),
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 300_000 }
+      );
+    };
+
     navigator.permissions
       .query({ name: "geolocation" as PermissionName })
       .then((status) => {
         if (status.state === "granted") {
-          setDetecting(true);
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const nearest = findNearestHap(pos.coords.latitude, pos.coords.longitude);
-              setHap(nearest);
-              setDetecting(false);
-            },
-            () => setDetecting(false),
-            { enableHighAccuracy: false, timeout: 5000, maximumAge: 300_000 }
-          );
+          tryDetect();
         }
+        // Listen for permission change (user grants via location prompt elsewhere)
+        status.addEventListener("change", () => {
+          if (status.state === "granted" && !hap) {
+            tryDetect();
+          }
+        });
       })
       .catch(() => {});
   }, []);
@@ -226,6 +238,8 @@ export default function HapBanner() {
               {t("generic")}
             </span>
           )}
+          <span className="text-white/40"> · </span>
+          <span className="text-white/60">{t("emergency")}</span>
         </p>
 
         {/* Dismiss */}

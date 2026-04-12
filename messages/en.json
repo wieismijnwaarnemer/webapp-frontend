@@ -119,7 +119,8 @@
   "hapBanner": {
     "message": "Urgent complaints that can't wait? Call the out-of-hours GP service in your area.",
     "detecting": "Finding location…",
-    "generic": "Call your own GP — the answering machine will provide the correct number."
+    "generic": "Call your own GP — the answering machine will provide the correct number.",
+    "emergency": "In emergencies always call 112"
   },
   "days": {
     "ma": "Monday",

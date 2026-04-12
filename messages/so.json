@@ -119,7 +119,8 @@
   "hapBanner": {
     "message": "Cabashooyin degdeg ah oo sugi karin? Wac adeegga dhakhtarka nasashada aagaaga.",
     "detecting": "Goobta la raadiyaa…",
-    "generic": "Wac dhakhtarkaaga — jawaab celinta ayaa ku siinaysa lambarka saxda ah."
+    "generic": "Wac dhakhtarkaaga — jawaab celinta ayaa ku siinaysa lambarka saxda ah.",
+    "emergency": "Xaalada degdegga ah had iyo jeer wac 112"
   },
   "days": {
     "ma": "Isniin",

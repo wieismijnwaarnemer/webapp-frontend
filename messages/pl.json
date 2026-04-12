@@ -119,7 +119,8 @@
   "hapBanner": {
     "message": "Pilne dolegliwości, które nie mogą czekać? Zadzwoń na dyżur lekarski w swoim regionie.",
     "detecting": "Szukanie lokalizacji…",
-    "generic": "Zadzwoń do swojego lekarza — automatyczna sekretarka poda właściwy numer."
+    "generic": "Zadzwoń do swojego lekarza — automatyczna sekretarka poda właściwy numer.",
+    "emergency": "W nagłych wypadkach zawsze dzwoń 112"
   },
   "days": {
     "ma": "Poniedziałek",
