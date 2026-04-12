@@ -676,7 +676,7 @@ export default function WieIsMijnWaarnemerHomepage() {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/logo.svg"
+                      src="/thuisarts.png"
                       alt="Thuisarts.nl"
                       className="h-8 w-auto sm:h-10"
                     />
