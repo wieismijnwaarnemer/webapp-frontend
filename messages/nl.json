@@ -11,10 +11,11 @@
     "heroTitle": "Is uw huisartsenpraktijk gesloten?",
     "heroHighlight": "Vind hier direct uw waarnemer.",
     "heroSubtitle": "Zoek uw huisartsenpraktijk en zie direct welke arts vandaag waarneemt.",
-    "searchPlaceholder": "Zoek uw huisartsenpraktijk (bijv. Huisartspraktijk Milad)",
+    "searchPlaceholder": "Zoek uw huisartsenpraktijk (bijv. Huisartsenpraktijk Milad)",
     "searchButton": "Zoek",
-    "trustedBy": "Vertrouwd door",
-    "patients": "patiënten",
+    "usp1": "Gratis voor patiënten",
+    "usp2": "Altijd actueel",
+    "usp3": "Geen account nodig",
     "stepsTitle": "In 3 stappen",
     "stepsHighlight": "uw waarnemer vinden.",
     "step1Title": "Zoek op naam",
@@ -79,13 +80,13 @@
     "waarnemerRoute": "Route"
   },
   "footer": {
-    "description": "Vind snel welke huisartspraktijk waarneemt wanneer uw eigen huisarts afwezig is.",
+    "description": "Vind snel welke huisartsenpraktijk waarneemt wanneer uw eigen huisarts afwezig is.",
     "forPatients": "Voor patiënten",
     "aboutUs": "Over ons",
     "contact": "Contact",
     "regions": "Regio's",
     "helpCenter": "Hulpcentrum",
-    "forPractices": "Voor huisartspraktijken",
+    "forPractices": "Voor huisartsenpraktijken",
     "registerPractice": "Praktijk aanmelden",
     "forPracticesLink": "Voor praktijken",
     "managePage": "Praktijkpagina beheren",
@@ -114,6 +115,11 @@
     "backToSite": "Terug naar site",
     "welcomeBack": "Welkom terug",
     "loginDesc": "Log in om uw praktijkpagina te beheren."
+  },
+  "hapBanner": {
+    "message": "Dringende klachten die niet kunnen wachten? Bel de huisartsenpost in uw regio.",
+    "detecting": "Locatie zoeken…",
+    "generic": "Bel uw eigen huisarts — het antwoordapparaat geeft het juiste HAP-nummer."
   },
   "days": {
     "ma": "Maandag",

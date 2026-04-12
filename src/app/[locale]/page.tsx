@@ -98,6 +98,17 @@ export default function WieIsMijnWaarnemerHomepage() {
     };
   }, []);
 
+  // Load Mindd self-triage widget script
+  useEffect(() => {
+    const id = "mindd-embed-script";
+    if (document.getElementById(id)) return;
+    const script = document.createElement("script");
+    script.id = id;
+    script.src = "https://widget.mindd.se/embed.js";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
   const handleLocate = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
       setGeoError(t("locationNotSupported"));
@@ -299,7 +310,10 @@ export default function WieIsMijnWaarnemerHomepage() {
       <SiteNavbar transparent />
 
       {/* Hero */}
-      <section className="px-2 pb-2 pt-[72px] sm:px-3 sm:pb-3 sm:pt-[76px] lg:pt-[80px]">
+      <section
+        className="px-2 pb-2 sm:px-3 sm:pb-3"
+        style={{ paddingTop: "calc(var(--hap-banner-h, 0px) + 76px)" }}
+      >
         <div className="relative mx-auto flex min-h-[calc(100vh-80px-1.5rem)] w-full max-w-[1600px] flex-col rounded-3xl bg-[linear-gradient(135deg,#f0eafc_0%,#f5f0ff_40%,#eee8fb_100%)] lg:rounded-[2.5rem]">
           {/* Achtergrond-afbeelding laag */}
           <div
@@ -487,28 +501,25 @@ export default function WieIsMijnWaarnemerHomepage() {
                   </div>
                 </div>
 
-                <div className="mx-auto mt-6 flex items-center gap-4 lg:mx-0">
-                  <div className="flex -space-x-2.5">
-                    <div className="h-10 w-10 rounded-full border-[2.5px] border-white bg-[url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80')] bg-cover bg-center shadow-[0_2px_8px_rgba(15,23,40,0.08)]" />
-                    <div className="h-10 w-10 rounded-full border-[2.5px] border-white bg-[url('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80')] bg-cover bg-center shadow-[0_2px_8px_rgba(15,23,40,0.08)]" />
-                    <div className="h-10 w-10 rounded-full border-[2.5px] border-white bg-[url('https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80')] bg-cover bg-center shadow-[0_2px_8px_rgba(15,23,40,0.08)]" />
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border-[2.5px] border-white bg-gradient-to-br from-[#3585ff] to-[#5b9fff] text-[11px] font-semibold text-white shadow-[0_2px_8px_rgba(53,133,255,0.25)]">
-                      10k+
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-start gap-0.5">
-                    <div className="flex items-center gap-0.5 text-[#fbbf24]">
-                      {[...Array(5)].map((_, i) => (
-                        <svg key={i} className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.922-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.175 0l-3.37 2.448c-.784.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.05 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z" />
-                        </svg>
-                      ))}
-                      <span className="ml-1.5 text-[12px] font-semibold text-white">4.9</span>
-                    </div>
-                    <p className="text-[12px] text-white/75">
-                      {t("trustedBy")} <span className="font-semibold text-white">10.000+</span> {t("patients")}
-                    </p>
-                  </div>
+                <div className="mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 lg:mx-0 lg:justify-start">
+                  <span className="flex items-center gap-1.5 text-[13px] text-white/75">
+                    <svg className="h-3.5 w-3.5 text-[#7ab0ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                    {t("usp1")}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[13px] text-white/75">
+                    <svg className="h-3.5 w-3.5 text-[#7ab0ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                    {t("usp2")}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[13px] text-white/75">
+                    <svg className="h-3.5 w-3.5 text-[#7ab0ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                    {t("usp3")}
+                  </span>
                 </div>
               </div>
 
@@ -538,6 +549,111 @@ export default function WieIsMijnWaarnemerHomepage() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Moet ik naar de dokter? */}
+      <section
+        className="relative overflow-hidden bg-[#0B3144] py-20 sm:py-28 md:py-32"
+      >
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 40%)",
+          }} />
+        </div>
+
+        <div className="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
+          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-5 lg:gap-16">
+            {/* Links: logo + widget embed (3/5) */}
+            <div className="lg:col-span-3">
+              {/* Moet ik naar de dokter? logo */}
+              <div className="mb-8 flex justify-center">
+                <a
+                  href="https://moetiknaardedokter.nl/?utm_source=widget&utm_medium=referral&utm_campaign=logo"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block rounded-xl bg-white/10 px-8 py-4 backdrop-blur-sm transition-all hover:bg-white/20 hover:scale-[1.02]"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/MoetIkNaarDeDokter_RGB-300x64.png"
+                    alt="Moet ik naar de dokter?"
+                    className="h-14 w-auto sm:h-16"
+                  />
+                </a>
+              </div>
+              <div className="overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
+                <div
+                  className="mindd-widget"
+                  id="mindd_widget_embedded_68cded46-0af8-4d23-8d3b-aa58a659ffd5"
+                  data-apikey="0Ga3COwYhymi1kW0NfwwvdaHlwSo46UQ"
+                  data-language="NL"
+                  data-showwelcometext="false"
+                  data-type="widget"
+                />
+              </div>
+            </div>
+
+            {/* Rechts: tekst + features (2/5) */}
+            <div className="lg:col-span-2">
+              <h2 className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] text-white sm:text-4xl md:text-[2.75rem]">
+                Direct advies nodig?
+              </h2>
+              <p className="mt-5 max-w-md text-base leading-relaxed text-white/70 sm:text-lg">
+                Wilt u weten of contact met de huisarts nodig is? Of wilt u
+                weten wat u nu aan uw klachten kunt doen? Vul dan hier een
+                aantal korte vragen in.
+              </p>
+
+              <div className="mt-10 flex flex-col gap-5">
+                {/* Feature 1 */}
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="white"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-semibold text-white">Betrouwbaar</p>
+                    <p className="mt-1 text-sm leading-relaxed text-white/60">
+                      Onze vragen zijn zorgvuldig samengesteld door een team van specialisten en onze Medical Board.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Feature 2 */}
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z" fill="white"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-semibold text-white">Wel of geen contact</p>
+                    <p className="mt-1 text-sm leading-relaxed text-white/60">
+                      Wij geven u direct advies over welke zorg nodig is voor uw klachten.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Feature 3 */}
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M17.73 12.02l3.98-3.98a.996.996 0 000-1.41l-4.34-4.34a.996.996 0 00-1.41 0l-3.98 3.98L8 2.29a1.001 1.001 0 00-1.41 0L2.25 6.63a.996.996 0 000 1.41l3.98 3.98L2.25 16a.996.996 0 000 1.41l4.34 4.34c.39.39 1.02.39 1.41 0l3.98-3.98 3.98 3.98c.39.39 1.02.39 1.41 0l4.34-4.34a.996.996 0 000-1.41l-3.98-3.98zM12 17.59L6.41 12 12 6.41 17.59 12 12 17.59z" fill="white"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-semibold text-white">Zelfzorgadvies</p>
+                    <p className="mt-1 text-sm leading-relaxed text-white/60">
+                      Wij geven u advies over wat u nu direct aan uw klachten kunt doen.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

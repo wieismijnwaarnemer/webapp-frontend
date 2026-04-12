@@ -11,10 +11,11 @@
     "heroTitle": "Aile hekiminiz kapalı mı?",
     "heroHighlight": "Nöbetçi doktorunuzu burada bulun.",
     "heroSubtitle": "Aile hekiminizi arayın ve bugün hangi doktorun nöbetçi olduğunu hemen görün.",
-    "searchPlaceholder": "Aile hekiminizi arayın (ör. Huisartspraktijk Milad)",
+    "searchPlaceholder": "Aile hekiminizi arayın (ör. Huisartsenpraktijk Milad)",
     "searchButton": "Ara",
-    "trustedBy": "Güvenen",
-    "patients": "hasta",
+    "usp1": "Hastalar için ücretsiz",
+    "usp2": "Her zaman güncel",
+    "usp3": "Hesap gerekmez",
     "stepsTitle": "3 adımda",
     "stepsHighlight": "nöbetçi doktorunuzu bulun.",
     "step1Title": "İsme göre arayın",
@@ -114,6 +115,11 @@
     "backToSite": "Siteye dön",
     "welcomeBack": "Tekrar hoş geldiniz",
     "loginDesc": "Muayenehane sayfanızı yönetmek için giriş yapın."
+  },
+  "hapBanner": {
+    "message": "Bekleyemeyecek acil şikayetleriniz mi var? Bölgenizdeki nöbetçi aile hekimini arayın.",
+    "detecting": "Konum aranıyor…",
+    "generic": "Kendi aile hekiminizi arayın — telesekreter doğru numarayı verecektir."
   },
   "days": {
     "ma": "Pazartesi",

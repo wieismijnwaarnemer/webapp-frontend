@@ -11,10 +11,11 @@
     "heroTitle": "Is your GP practice closed?",
     "heroHighlight": "Find your substitute doctor here.",
     "heroSubtitle": "Search your GP practice and instantly see which doctor is on duty today.",
-    "searchPlaceholder": "Search your GP practice (e.g. Huisartspraktijk Milad)",
+    "searchPlaceholder": "Search your GP practice (e.g. Huisartsenpraktijk Milad)",
     "searchButton": "Search",
-    "trustedBy": "Trusted by",
-    "patients": "patients",
+    "usp1": "Free for patients",
+    "usp2": "Always up to date",
+    "usp3": "No account needed",
     "stepsTitle": "Find your substitute",
     "stepsHighlight": "in 3 steps.",
     "step1Title": "Search by name",
@@ -114,6 +115,11 @@
     "backToSite": "Back to site",
     "welcomeBack": "Welcome back",
     "loginDesc": "Log in to manage your practice page."
+  },
+  "hapBanner": {
+    "message": "Urgent complaints that can't wait? Call the out-of-hours GP service in your area.",
+    "detecting": "Finding location…",
+    "generic": "Call your own GP — the answering machine will provide the correct number."
   },
   "days": {
     "ma": "Monday",

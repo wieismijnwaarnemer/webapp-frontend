@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { type Locale } from "@/i18n/routing";
+import HapBanner from "./HapBanner";
 
 function FlagIcon({ code }: { code: string }) {
   const content = (() => {
@@ -152,6 +153,7 @@ export default function SiteNavbar({
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50">
+      <HapBanner />
       <nav
         className={`relative transition-all duration-300 ease-out ${
           scrolled ? "bg-white/60 backdrop-blur-xl" : defaultBg

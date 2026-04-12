@@ -11,10 +11,11 @@
     "heroTitle": "Xaruntaada dhakhtarku ma xiran tahay?",
     "heroHighlight": "Halkan ka hel dhakhtarkaaga bedelka ah.",
     "heroSubtitle": "Raadi xaruntaada dhakhtarka oo arag dhakhtarka maanta shaqaynaya.",
-    "searchPlaceholder": "Raadi xaruntaada dhakhtarka (tusaale Huisartspraktijk Milad)",
+    "searchPlaceholder": "Raadi xaruntaada dhakhtarka (tusaale Huisartsenpraktijk Milad)",
     "searchButton": "Raadi",
-    "trustedBy": "Waxaa nagu kalsoon",
-    "patients": "bukaan",
+    "usp1": "Bilaash bukaanka",
+    "usp2": "Had iyo jeer la cusbooneysiiyay",
+    "usp3": "Akoon looma baahna",
     "stepsTitle": "3 tallaabo",
     "stepsHighlight": "ku hel dhakhtarkaaga bedelka ah.",
     "step1Title": "Ku raadi magaca",
@@ -114,6 +115,11 @@
     "backToSite": "Ku noqo goobta",
     "welcomeBack": "Ku soo dhawoow",
     "loginDesc": "Soo gal si aad u maamusho bogga xaruntaada."
+  },
+  "hapBanner": {
+    "message": "Cabashooyin degdeg ah oo sugi karin? Wac adeegga dhakhtarka nasashada aagaaga.",
+    "detecting": "Goobta la raadiyaa…",
+    "generic": "Wac dhakhtarkaaga — jawaab celinta ayaa ku siinaysa lambarka saxda ah."
   },
   "days": {
     "ma": "Isniin",

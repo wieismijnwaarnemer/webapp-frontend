@@ -11,10 +11,11 @@
     "heroTitle": "هل عيادة طبيبك مغلقة؟",
     "heroHighlight": "ابحث عن طبيبك البديل هنا.",
     "heroSubtitle": "ابحث عن عيادة طبيبك وشاهد فوراً أي طبيب مناوب اليوم.",
-    "searchPlaceholder": "ابحث عن عيادة طبيبك (مثلاً Huisartspraktijk Milad)",
+    "searchPlaceholder": "ابحث عن عيادة طبيبك (مثلاً Huisartsenpraktijk Milad)",
     "searchButton": "بحث",
-    "trustedBy": "يثق بنا",
-    "patients": "مريض",
+    "usp1": "مجاني للمرضى",
+    "usp2": "محدّث دائماً",
+    "usp3": "بدون حساب",
     "stepsTitle": "في 3 خطوات",
     "stepsHighlight": "ابحث عن طبيبك البديل.",
     "step1Title": "ابحث بالاسم",
@@ -114,6 +115,11 @@
     "backToSite": "العودة للموقع",
     "welcomeBack": "مرحباً بعودتك",
     "loginDesc": "سجل الدخول لإدارة صفحة عيادتك."
+  },
+  "hapBanner": {
+    "message": "شكاوى عاجلة لا يمكن أن تنتظر؟ اتصل بخدمة الطبيب المناوب في منطقتك.",
+    "detecting": "جاري البحث عن الموقع…",
+    "generic": "اتصل بطبيبك — جهاز الرد الآلي سيعطيك الرقم الصحيح."
   },
   "days": {
     "ma": "الاثنين",

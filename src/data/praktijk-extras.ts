@@ -28,15 +28,15 @@ const standaardWeek: WeekSchedule = {
 // Deze worden samen met de auto-lijst gebruikt door alle searches en detailpagina's.
 const demoPraktijken: PraktijkDetails[] = [
   {
-    id: "huisartspraktijk-milad-amsterdam",
-    naam: "Huisartspraktijk Milad",
+    id: "huisartsenpraktijk-milad-amsterdam",
+    naam: "Huisartsenpraktijk Milad",
     straat: "Keizersgracht 212",
     postcode: "1016 DX",
     plaats: "Amsterdam",
     stad: "Amsterdam",
     telefoon: "020-5551234",
-    email: "info@huisartspraktijk-milad.nl",
-    website: "https://huisartspraktijk-milad.nl",
+    email: "info@huisartsenpraktijk-milad.nl",
+    website: "https://huisartsenpraktijk-milad.nl",
     openingstijden: "Ma–Vr 08:00–17:00",
     google:
       "https://www.google.com/maps/search/?api=1&query=Keizersgracht+212+Amsterdam",
@@ -44,14 +44,14 @@ const demoPraktijken: PraktijkDetails[] = [
     lng: 4.886,
     logo: "https://api.dicebear.com/7.x/initials/svg?seed=Milad&backgroundColor=3585ff&textColor=ffffff&fontWeight=700",
     waarnemers: [
-      "huisartspraktijk-de-linde-amsterdam",
+      "huisartsenpraktijk-de-linde-amsterdam",
       "medisch-centrum-zuid-amsterdam",
       "huisarts-janssen-amsterdam",
     ],
     weekSchedule: standaardWeek,
   },
   {
-    id: "huisartspraktijk-de-linde-amsterdam",
+    id: "huisartsenpraktijk-de-linde-amsterdam",
     naam: "Huisartsenpraktijk De Linde",
     straat: "Prinsengracht 402",
     postcode: "1016 JB",

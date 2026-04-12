@@ -67,7 +67,7 @@ export default function SiteFooter() {
               </ul>
             </div>
 
-            {/* Voor huisartspraktijken */}
+            {/* Voor huisartsenpraktijken */}
             <div>
               <h3 className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/50">
                 {t("forPractices")}

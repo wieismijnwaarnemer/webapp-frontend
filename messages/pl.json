@@ -11,10 +11,11 @@
     "heroTitle": "Twoja przychodnia jest zamknięta?",
     "heroHighlight": "Znajdź swojego lekarza zastępczego.",
     "heroSubtitle": "Wyszukaj swoją przychodnię i sprawdź, który lekarz dyżuruje dzisiaj.",
-    "searchPlaceholder": "Wyszukaj swoją przychodnię (np. Huisartspraktijk Milad)",
+    "searchPlaceholder": "Wyszukaj swoją przychodnię (np. Huisartsenpraktijk Milad)",
     "searchButton": "Szukaj",
-    "trustedBy": "Zaufało nam",
-    "patients": "pacjentów",
+    "usp1": "Bezpłatnie dla pacjentów",
+    "usp2": "Zawsze aktualne",
+    "usp3": "Bez rejestracji",
     "stepsTitle": "Znajdź zastępcę",
     "stepsHighlight": "w 3 krokach.",
     "step1Title": "Wyszukaj po nazwie",
@@ -114,6 +115,11 @@
     "backToSite": "Wróć na stronę",
     "welcomeBack": "Witaj ponownie",
     "loginDesc": "Zaloguj się, aby zarządzać stroną przychodni."
+  },
+  "hapBanner": {
+    "message": "Pilne dolegliwości, które nie mogą czekać? Zadzwoń na dyżur lekarski w swoim regionie.",
+    "detecting": "Szukanie lokalizacji…",
+    "generic": "Zadzwoń do swojego lekarza — automatyczna sekretarka poda właściwy numer."
   },
   "days": {
     "ma": "Poniedziałek",

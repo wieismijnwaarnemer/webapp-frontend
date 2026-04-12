@@ -188,7 +188,10 @@ export default async function PraktijkDetailPage({
     <div className="min-h-screen bg-[#f7f8fa]">
       <SiteNavbar />
 
-      <main className="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-[96px] sm:px-6 sm:pb-20 sm:pt-[112px] lg:px-10 lg:pt-[120px]">
+      <main
+        className="mx-auto w-full max-w-[1400px] px-4 pb-16 sm:px-6 sm:pb-20 lg:px-10"
+        style={{ paddingTop: "calc(var(--hap-banner-h, 0px) + 100px)" }}
+      >
         {/* Terug naar zoeken */}
         <Link
           href="/"
