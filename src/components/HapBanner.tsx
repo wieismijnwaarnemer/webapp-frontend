@@ -148,9 +148,7 @@ export default function HapBanner() {
 
   useEffect(() => {
     // Check if user already dismissed this session
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("hapBannerDismissed") === "1") {
-      return;
-    }
+    // Banner is always visible on page load — no persistent dismiss
     setDismissed(false);
 
     // Auto-detect location silently (only if permission already granted)
@@ -189,9 +187,6 @@ export default function HapBanner() {
 
   const dismiss = () => {
     setDismissed(true);
-    if (typeof sessionStorage !== "undefined") {
-      sessionStorage.setItem("hapBannerDismissed", "1");
-    }
   };
 
   if (dismissed) return null;
@@ -199,18 +194,14 @@ export default function HapBanner() {
   return (
     <div ref={bannerRef} className="bg-[#1d1d1b] text-white">
       <div className="mx-auto flex w-full max-w-[1400px] items-center gap-3 px-4 py-2.5 sm:px-6 lg:px-10">
-        {/* Phone icon */}
+        {/* Warning icon */}
         <span className="hidden shrink-0 sm:flex h-6 w-6 items-center justify-center">
           <svg
-            className="h-4 w-4 text-[#7ab0ff]"
+            className="h-4 w-4 text-[#ff6b6b]"
             viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2.2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            fill="currentColor"
           >
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z" />
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
           </svg>
         </span>
 
@@ -239,7 +230,10 @@ export default function HapBanner() {
             </span>
           )}
           <span className="text-white/40"> · </span>
-          <span className="text-white/60">{t("emergency")}</span>
+          <span className="font-semibold text-[#ff6b6b]">
+            <svg className="mr-1 -mt-0.5 inline h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+            {t("emergency")}
+          </span>
         </p>
 
         {/* Dismiss */}
