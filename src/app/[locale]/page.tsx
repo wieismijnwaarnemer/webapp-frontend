@@ -553,105 +553,135 @@ export default function WieIsMijnWaarnemerHomepage() {
         </div>
       </section>
 
-      {/* Moet ik naar de dokter? */}
-      <section
-        className="relative overflow-hidden bg-[#0B3144] py-20 sm:py-28 md:py-32"
-      >
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 40%)",
-          }} />
-        </div>
+      {/* Meer hulp nodig? — Thuisarts.nl + Moet ik naar de dokter? */}
+      <section className="bg-[#f7f6fb] py-20 sm:py-28 md:py-32">
+        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
+          {/* Section header */}
+          <div className="mx-auto mb-16 max-w-3xl text-center sm:mb-20 lg:mb-24">
+            <h2 className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:text-4xl md:text-[2.75rem]">
+              Meer hulp nodig bij uw <span className="text-[#7ab0ff]">klachten?</span>
+            </h2>
+            <p className="mt-5 text-base leading-relaxed text-gray-500 sm:text-lg">
+              Naast het vinden van uw waarnemer kunt u ook direct medisch advies krijgen of betrouwbare informatie opzoeken.
+            </p>
+          </div>
 
-        <div className="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
-          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-5 lg:gap-16">
-            {/* Links: logo + widget embed (3/5) */}
-            <div className="lg:col-span-3">
-              {/* Moet ik naar de dokter? logo */}
-              <div className="mb-8 flex flex-col items-center gap-3">
-                <a
-                  href="https://moetiknaardedokter.nl/?utm_source=widget&utm_medium=referral&utm_campaign=logo"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block rounded-xl bg-white/10 px-8 py-4 backdrop-blur-sm transition-all hover:bg-white/20 hover:scale-[1.02]"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/MoetIkNaarDeDokter_RGB-300x64.png"
-                    alt="Moet ik naar de dokter?"
-                    className="h-14 w-auto sm:h-16 lg:h-20"
-                  />
-                </a>
-                <p className="text-sm text-white/50">Klik om naar Moet ik naar de dokter? te gaan</p>
-              </div>
-              <div className="overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
-                <div
-                  className="mindd-widget"
-                  id="mindd_widget_embedded_68cded46-0af8-4d23-8d3b-aa58a659ffd5"
-                  data-apikey="0Ga3COwYhymi1kW0NfwwvdaHlwSo46UQ"
-                  data-language="NL"
-                  data-showwelcometext="false"
-                  data-type="widget"
-                />
+          {/* Two cards */}
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
+            {/* Card 1: Moet ik naar de dokter? */}
+            <div className="flex flex-col overflow-hidden rounded-2xl bg-[#7ab0ff] shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
+              <div className="flex flex-1 flex-col p-8 sm:p-10">
+                <h3 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
+                  Direct advies nodig?
+                </h3>
+                <p className="mt-3 text-base leading-relaxed text-gray-800/80">
+                  Wilt u weten of contact met de huisarts nodig is? Beantwoord een aantal korte vragen en krijg direct advies.
+                </p>
+
+                <div className="mt-8 flex flex-col gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/10">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#1d1d1b"/></svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Betrouwbaar</p>
+                      <p className="text-sm text-gray-700/70">Samengesteld door specialisten en de Medical Board.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/10">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 15.5c-1.25 0-2.45-.2-3.57-.57a1.02 1.02 0 00-1.02.24l-2.2 2.2a15.045 15.045 0 01-6.59-6.59l2.2-2.21a.96.96 0 00.25-1A11.36 11.36 0 018.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.5c0-.55-.45-1-1-1z" fill="#1d1d1b"/></svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Wel of geen contact</p>
+                      <p className="text-sm text-gray-700/70">Direct advies over welke zorg nodig is.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/10">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="#1d1d1b"/></svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Binnen 1 minuut klaar</p>
+                      <p className="text-sm text-gray-700/70">Snel en eenvoudig, zonder account.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-8">
+                  <a
+                    href="https://moetiknaardedokter.nl/?utm_source=widget&utm_medium=referral&utm_campaign=logo"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-3 rounded-xl bg-white px-6 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.1)] transition-all hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(0,0,0,0.15)]"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/MoetIkNaarDeDokter_RGB-300x64.png"
+                      alt="Moet ik naar de dokter?"
+                      className="h-10 w-auto sm:h-12"
+                    />
+                  </a>
+                  <p className="mt-3 text-xs text-gray-700/60">Klik om naar Moet ik naar de dokter? te gaan</p>
+                </div>
               </div>
             </div>
 
-            {/* Rechts: tekst + features (2/5) */}
-            <div className="lg:col-span-2">
-              <h2 className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] text-white sm:text-4xl md:text-[2.75rem]">
-                Direct advies nodig?
-              </h2>
-              <p className="mt-5 max-w-md text-base leading-relaxed text-white/70 sm:text-lg">
-                Wilt u weten of contact met de huisarts nodig is? Of wilt u
-                weten wat u nu aan uw klachten kunt doen? Vul dan hier een
-                aantal korte vragen in.
-              </p>
+            {/* Card 2: Thuisarts.nl */}
+            <div className="flex flex-col overflow-hidden rounded-2xl bg-[#1a3a4a] shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
+              <div className="flex flex-1 flex-col p-8 sm:p-10">
+                <h3 className="text-2xl font-semibold text-white sm:text-3xl">
+                  Wilt u weten wat u zelf kunt doen?
+                </h3>
+                <p className="mt-3 text-base leading-relaxed text-white/70">
+                  Thuisarts.nl geeft betrouwbare informatie over ziekte en gezondheid. Gemaakt door artsen, voor iedereen.
+                </p>
 
-              <div className="mt-10 flex flex-col gap-5">
-                {/* Feature 1 */}
-                <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="white"/>
-                    </svg>
+                <div className="mt-8 flex flex-col gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="white"/></svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">Gemaakt door artsen</p>
+                      <p className="text-sm text-white/60">Gecontroleerd door medische specialisten in Nederland.</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[15px] font-semibold text-white">Betrouwbaar</p>
-                    <p className="mt-1 text-sm leading-relaxed text-white/60">
-                      Onze vragen zijn zorgvuldig samengesteld door een team van specialisten en onze Medical Board.
-                    </p>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" fill="white"/></svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">Informatie over behandelingen</p>
+                      <p className="text-sm text-white/60">Lees wat u kunt verwachten bij een bezoek aan de huisarts.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="white"/></svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">Altijd en overal beschikbaar</p>
+                      <p className="text-sm text-white/60">24/7 gratis te raadplegen, ook via de app.</p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Feature 2 */}
-                <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z" fill="white"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-[15px] font-semibold text-white">Wel of geen contact</p>
-                    <p className="mt-1 text-sm leading-relaxed text-white/60">
-                      Wij geven u direct advies over welke zorg nodig is voor uw klachten.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Feature 3 */}
-                <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M17.73 12.02l3.98-3.98a.996.996 0 000-1.41l-4.34-4.34a.996.996 0 00-1.41 0l-3.98 3.98L8 2.29a1.001 1.001 0 00-1.41 0L2.25 6.63a.996.996 0 000 1.41l3.98 3.98L2.25 16a.996.996 0 000 1.41l4.34 4.34c.39.39 1.02.39 1.41 0l3.98-3.98 3.98 3.98c.39.39 1.02.39 1.41 0l4.34-4.34a.996.996 0 000-1.41l-3.98-3.98zM12 17.59L6.41 12 12 6.41 17.59 12 12 17.59z" fill="white"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-[15px] font-semibold text-white">Zelfzorgadvies</p>
-                    <p className="mt-1 text-sm leading-relaxed text-white/60">
-                      Wij geven u advies over wat u nu direct aan uw klachten kunt doen.
-                    </p>
-                  </div>
+                <div className="mt-auto pt-8">
+                  <a
+                    href="https://www.thuisarts.nl/?utm_source=wieismijnwaarnemer&utm_medium=referral&utm_campaign=logo"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-3 rounded-xl bg-white px-6 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.15)] transition-all hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/logo.svg"
+                      alt="Thuisarts.nl"
+                      className="h-8 w-auto sm:h-10"
+                    />
+                  </a>
+                  <p className="mt-3 text-xs text-white/40">Klik om naar Thuisarts.nl te gaan</p>
                 </div>
               </div>
             </div>
