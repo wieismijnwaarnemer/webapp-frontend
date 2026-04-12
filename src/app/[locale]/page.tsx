@@ -554,7 +554,7 @@ export default function WieIsMijnWaarnemerHomepage() {
       </section>
 
       {/* Meer hulp nodig? — Thuisarts.nl + Moet ik naar de dokter? */}
-      <section className="bg-[#f7f6fb] py-20 sm:py-28 md:py-32">
+      <section className="bg-white py-20 sm:py-28 md:py-32">
         <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
           {/* Section header */}
           <div className="mx-auto mb-16 max-w-3xl text-center sm:mb-20 lg:mb-24">
