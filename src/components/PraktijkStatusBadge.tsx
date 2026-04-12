@@ -1,22 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { DayKey, WeekSchedule } from "@/data/praktijk-extras";
 
 const DAY_ORDER: DayKey[] = ["ma", "di", "wo", "do", "vr", "za", "zo"];
-const DAY_LABEL: Record<DayKey, string> = {
-  ma: "maandag",
-  di: "dinsdag",
-  wo: "woensdag",
-  do: "donderdag",
-  vr: "vrijdag",
-  za: "zaterdag",
-  zo: "zondag",
-};
 
 // JavaScript getDay(): 0 = zondag, 1 = maandag, ..., 6 = zaterdag
 function jsDayToKey(d: number): DayKey {
-  // Shift zo dat maandag index 0 krijgt om met DAY_ORDER overeen te komen.
   return DAY_ORDER[(d + 6) % 7];
 }
 
@@ -39,14 +30,12 @@ function computeStatus(schedule: WeekSchedule, now: Date): Status {
     return { open: true, tot: today.tot };
   }
 
-  // Eerstvolgende dag zoeken (inclusief later vandaag).
   const todayIndex = DAY_ORDER.indexOf(todayKey);
   for (let i = 0; i < 7; i++) {
     const key = DAY_ORDER[(todayIndex + i) % 7];
     const h = schedule[key];
     if (!h) continue;
     if (i === 0) {
-      // Vandaag nog — alleen als we nu nog vóór openingstijd zitten.
       if (minutesNow < toMinutes(h.van)) {
         return { open: false, nextDay: key, nextVan: h.van, isToday: true };
       }
@@ -64,6 +53,8 @@ export default function PraktijkStatusBadge({
   schedule: WeekSchedule;
   size?: "sm" | "md";
 }) {
+  const t = useTranslations("praktijk");
+  const tDays = useTranslations("days");
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -76,13 +67,12 @@ export default function PraktijkStatusBadge({
   const dotClass = size === "sm" ? "h-1.5 w-1.5" : "h-2 w-2";
 
   if (!now) {
-    // Server-render fallback: neutrale pil zonder live-status (voorkomt hydration mismatch).
     return (
       <span
         className={`inline-flex items-center gap-1.5 rounded-full bg-gray-100 font-semibold text-gray-500 ${paddingClass}`}
       >
         <span className={`rounded-full bg-gray-300 ${dotClass}`} />
-        Status laden…
+        {t("statusLoading")}
       </span>
     );
   }
@@ -98,21 +88,24 @@ export default function PraktijkStatusBadge({
           <span className={`absolute inline-flex animate-ping rounded-full bg-[#1f8c4e]/60 ${dotClass}`} />
           <span className={`relative inline-flex rounded-full bg-[#1f8c4e] ${dotClass}`} />
         </span>
-        Open — nu tot {status.tot}
+        {t("openNow", { time: status.tot })}
       </span>
     );
   }
 
   if (status.nextDay) {
     const label = status.isToday
-      ? `vanaf ${status.nextVan} vandaag`
-      : `${DAY_LABEL[status.nextDay]} ${status.nextVan}`;
+      ? t("closedUntilToday", { time: status.nextVan })
+      : t("closedUntilDay", {
+          day: tDays(`${status.nextDay}Lower`),
+          time: status.nextVan,
+        });
     return (
       <span
         className={`inline-flex items-center gap-1.5 rounded-full bg-[#fef2f2] font-semibold text-[#dc2626] ${paddingClass}`}
       >
         <span className={`rounded-full bg-[#dc2626] ${dotClass}`} />
-        Gesloten — {label}
+        {label}
       </span>
     );
   }
@@ -122,7 +115,7 @@ export default function PraktijkStatusBadge({
       className={`inline-flex items-center gap-1.5 rounded-full bg-gray-100 font-semibold text-gray-500 ${paddingClass}`}
     >
       <span className={`rounded-full bg-gray-400 ${dotClass}`} />
-      Openingstijden onbekend
+      {t("unknownHours")}
     </span>
   );
 }

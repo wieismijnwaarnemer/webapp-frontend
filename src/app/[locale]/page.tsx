@@ -2,92 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   allePraktijken,
   type PraktijkDetails,
 } from "@/data/praktijk-extras";
 import { zoekPraktijken } from "@/lib/praktijk-search";
+import SiteNavbar from "@/components/SiteNavbar";
+import SiteFooter from "@/components/SiteFooter";
 
 type PraktijkHit = PraktijkDetails & { afstandKm?: number };
-
-function FlagIcon({ code }: { code: string }) {
-  const content = (() => {
-    switch (code) {
-      case "nl":
-        return (
-          <>
-            <rect width="16" height="16" fill="#AE1C28" />
-            <rect y="5.333" width="16" height="5.334" fill="#FFFFFF" />
-            <rect y="10.667" width="16" height="5.333" fill="#21468B" />
-          </>
-        );
-      case "en":
-        return (
-          <>
-            <rect width="16" height="16" fill="#012169" />
-            <path d="M0 0L16 16M16 0L0 16" stroke="white" strokeWidth="2.5" />
-            <path d="M0 0L16 16M16 0L0 16" stroke="#C8102E" strokeWidth="1.5" />
-            <path d="M8 0V16M0 8H16" stroke="white" strokeWidth="4" />
-            <path d="M8 0V16M0 8H16" stroke="#C8102E" strokeWidth="2.5" />
-          </>
-        );
-      case "tr":
-        return <rect width="16" height="16" fill="#E30A17" />;
-      case "pl":
-        return (
-          <>
-            <rect width="16" height="8" fill="#FFFFFF" />
-            <rect y="8" width="16" height="8" fill="#DC143C" />
-          </>
-        );
-      case "ar-sy":
-        return (
-          <>
-            <rect width="16" height="5.333" fill="#CE1126" />
-            <rect y="5.333" width="16" height="5.334" fill="#FFFFFF" />
-            <rect y="10.667" width="16" height="5.333" fill="#000000" />
-          </>
-        );
-      case "ar-ma":
-        return <rect width="16" height="16" fill="#C1272D" />;
-      case "fa-af":
-        return (
-          <>
-            <rect width="5.333" height="16" fill="#000000" />
-            <rect x="5.333" width="5.334" height="16" fill="#D32011" />
-            <rect x="10.667" width="5.333" height="16" fill="#007A36" />
-          </>
-        );
-      case "so":
-        return <rect width="16" height="16" fill="#4189DD" />;
-      case "uk":
-        return (
-          <>
-            <rect width="16" height="8" fill="#005BBB" />
-            <rect y="8" width="16" height="8" fill="#FFD500" />
-          </>
-        );
-      case "ru":
-        return (
-          <>
-            <rect width="16" height="5.333" fill="#FFFFFF" />
-            <rect y="5.333" width="16" height="5.334" fill="#0039A6" />
-            <rect y="10.667" width="16" height="5.333" fill="#D52B1E" />
-          </>
-        );
-      default:
-        return <rect width="16" height="16" fill="#e5e5e5" />;
-    }
-  })();
-
-  return (
-    <span className="flex h-4 w-4 shrink-0 overflow-hidden rounded-full">
-      <svg viewBox="0 0 16 16" className="h-full w-full" aria-hidden="true">
-        {content}
-      </svg>
-    </span>
-  );
-}
 
 function haversineKm(
   a: { lat: number; lng: number },
@@ -112,26 +36,14 @@ const MIN_ACCURACY_M = 10_000;
 
 export default function WieIsMijnWaarnemerHomepage() {
   const router = useRouter();
-  const [scrolled, setScrolled] = useState(false);
+  const t = useTranslations("home");
   const [query, setQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [nearby, setNearby] = useState<PraktijkHit[] | null>(null);
   const [locationPromptOpen, setLocationPromptOpen] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
-  const [currentLang, setCurrentLang] = useState<
-    "tr" | "pl" | "ar-sy" | "ar-ma" | "fa-af" | "so" | "uk" | "ru" | "nl" | "en"
-  >("nl");
   const searchRef = useRef<HTMLDivElement>(null);
-  const langRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !navigator.geolocation) return;
@@ -172,14 +84,10 @@ export default function WieIsMijnWaarnemerHomepage() {
       if (searchRef.current && !searchRef.current.contains(target)) {
         closeAll();
       }
-      if (langRef.current && !langRef.current.contains(target)) {
-        setLangOpen(false);
-      }
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         closeAll();
-        setLangOpen(false);
       }
     };
     document.addEventListener("pointerdown", onPointerDown);
@@ -192,7 +100,7 @@ export default function WieIsMijnWaarnemerHomepage() {
 
   const handleLocate = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
-      setGeoError("Locatie wordt niet ondersteund door deze browser.");
+      setGeoError(t("locationNotSupported"));
       setShowDropdown(true);
       return;
     }
@@ -205,9 +113,7 @@ export default function WieIsMijnWaarnemerHomepage() {
         const { latitude, longitude, accuracy } = pos.coords;
         if (accuracy && accuracy > MIN_ACCURACY_M) {
           setGeoLoading(false);
-          setGeoError(
-            "Je locatie is te onnauwkeurig om praktijken in de buurt te tonen. Zoek op naam of postcode."
-          );
+          setGeoError(t("locationInaccurate"));
           return;
         }
         const sorted = allePraktijken
@@ -222,9 +128,7 @@ export default function WieIsMijnWaarnemerHomepage() {
           .filter((p) => p.afstandKm <= MAX_NEARBY_KM)
           .slice(0, 5);
         if (sorted.length === 0) {
-          setGeoError(
-            "Geen praktijken in jouw buurt gevonden. Zoek op naam of postcode."
-          );
+          setGeoError(t("locationNone"));
           setNearby(null);
         } else {
           setNearby(sorted);
@@ -235,8 +139,8 @@ export default function WieIsMijnWaarnemerHomepage() {
         setGeoLoading(false);
         setGeoError(
           err.code === 1
-            ? "Locatietoestemming geweigerd."
-            : "Kon locatie niet ophalen."
+            ? t("locationDenied")
+            : t("locationFailed")
         );
       },
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 }
@@ -275,8 +179,8 @@ export default function WieIsMijnWaarnemerHomepage() {
     () => [
       {
         n: 1,
-        title: "Zoek op naam",
-        text: "Typ de naam van uw huisartsenpraktijk of gebruik uw locatie.",
+        title: t("step1Title"),
+        text: t("step1Text"),
         icon: (
           <svg className="h-6 w-6 text-[#1d1d1b] sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="7" />
@@ -286,8 +190,8 @@ export default function WieIsMijnWaarnemerHomepage() {
       },
       {
         n: 2,
-        title: "Zie de waarnemer",
-        text: "Direct duidelijk welke praktijk vandaag waarneemt.",
+        title: t("step2Title"),
+        text: t("step2Text"),
         icon: (
           <svg className="h-6 w-6 text-[#1d1d1b] sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -297,8 +201,8 @@ export default function WieIsMijnWaarnemerHomepage() {
       },
       {
         n: 3,
-        title: "Bel of bezoek",
-        text: "U heeft meteen het juiste adres en telefoonnummer.",
+        title: t("step3Title"),
+        text: t("step3Text"),
         icon: (
           <svg className="h-6 w-6 text-[#1d1d1b] sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z" />
@@ -306,7 +210,7 @@ export default function WieIsMijnWaarnemerHomepage() {
         ),
       },
     ],
-    []
+    [t]
   );
 
   const pickStad = (stad: string) => {
@@ -362,10 +266,10 @@ export default function WieIsMijnWaarnemerHomepage() {
                 id="location-prompt-title"
                 className="mt-4 text-[18px] font-semibold leading-snug text-[#1d1d1b] sm:text-[19px]"
               >
-                Praktijken in uw buurt tonen?
+                {t("locationTitle")}
               </h2>
               <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#6b7280]">
-                Met uw locatie tonen we direct de dichtstbijzijnde huisartsen. Uw locatie blijft op uw apparaat.
+                {t("locationDesc")}
               </p>
             </div>
 
@@ -378,141 +282,21 @@ export default function WieIsMijnWaarnemerHomepage() {
                 }}
                 className="w-full rounded-xl bg-[#1d1d1b] px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:brightness-125"
               >
-                Sta toe
+                {t("locationAllow")}
               </button>
               <button
                 type="button"
                 onClick={dismissLocationPrompt}
                 className="w-full rounded-xl border border-gray-200 bg-white px-5 py-3 text-[14px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
               >
-                Nee, bedankt
+                {t("locationDeny")}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Navbar */}
-      <header className="fixed left-0 right-0 top-0 z-50">
-        <nav
-          className={`relative transition-all duration-300 ease-out ${
-            scrolled ? "bg-white/60 backdrop-blur-xl" : "bg-transparent"
-          }`}
-        >
-          <div
-            className={`pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/20 transition-opacity duration-300 ${
-              scrolled ? "opacity-100" : "opacity-0"
-            }`}
-          />
-          <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
-            <div className="flex h-[68px] items-center justify-between lg:h-[76px]">
-              <a className="flex shrink-0 items-center" href="/">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/logo.png"
-                  alt="Wieismijnwaarnemer"
-                  className="h-10 w-auto sm:h-12"
-                />
-              </a>
-
-              <div className="flex items-center gap-2 sm:gap-3">
-                {/* Taal-dropdown */}
-                <div ref={langRef} className="relative">
-                  {(() => {
-                    const langs: { code: typeof currentLang; label: string }[] = [
-                      { code: "tr", label: "Türkçe" },
-                      { code: "pl", label: "Polski" },
-                      { code: "ar-sy", label: "Syrisch" },
-                      { code: "ar-ma", label: "Marokkaans" },
-                      { code: "fa-af", label: "Afghaans" },
-                      { code: "so", label: "Soomaali" },
-                      { code: "uk", label: "Українська" },
-                      { code: "ru", label: "Русский" },
-                      { code: "nl", label: "Nederlands" },
-                      { code: "en", label: "English" },
-                    ];
-                    const current = langs.find((l) => l.code === currentLang)!;
-                    const shortCode = current.code.includes("-")
-                      ? current.code.split("-")[1].toUpperCase()
-                      : current.code.toUpperCase();
-                    return (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setLangOpen((o) => !o)}
-                          aria-haspopup="listbox"
-                          aria-expanded={langOpen}
-                          className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-black/5"
-                        >
-                          <FlagIcon code={current.code} />
-                          <span className="text-[13px] font-normal uppercase text-[#1d1d1b]">
-                            {shortCode}
-                          </span>
-                          <svg
-                            width="9"
-                            height="6"
-                            viewBox="0 0 9 6"
-                            fill="none"
-                            className={`transition-transform duration-200 ${langOpen ? "rotate-180" : ""}`}
-                          >
-                            <path
-                              d="M8.1 1.61L4.78 5.03a.75.75 0 0 1-1.06 0L.4 1.61a.5.5 0 0 1 .35-.86h7a.5.5 0 0 1 .35.86z"
-                              fill="#1D1D1B"
-                            />
-                          </svg>
-                        </button>
-                        {langOpen && (
-                          <div className="absolute right-0 top-full z-50 pt-2 animate-[dropdownIn_160ms_ease-out]">
-                            <div className="w-[280px] rounded-xl border border-[#e5e5e5] bg-white p-5 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-                              <p className="mb-3 text-[13px] font-medium text-[#1d1d1b]">
-                                Kies je taal
-                              </p>
-                              <div className="flex flex-col gap-1">
-                                {langs.map((l) => {
-                                  const active = l.code === currentLang;
-                                  return (
-                                    <button
-                                      key={l.code}
-                                      type="button"
-                                      onClick={() => {
-                                        setCurrentLang(l.code);
-                                        setLangOpen(false);
-                                      }}
-                                      className={`flex items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors ${
-                                        active ? "bg-[#f5f5f5]" : "hover:bg-[#f5f5f5]"
-                                      }`}
-                                    >
-                                      <FlagIcon code={l.code} />
-                                      <span
-                                        className={`text-[13px] ${
-                                          active ? "text-[#1d1d1b]" : "text-[#1d1d1b]/60"
-                                        }`}
-                                      >
-                                        {l.label}
-                                      </span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-
-                <a
-                  href="/aanmelden"
-                  className="hidden items-center justify-center rounded-lg bg-[#1d1d1b] px-5 py-3 text-[14px] font-medium text-white transition-colors duration-200 hover:bg-[#1d1d1b]/85 sm:inline-flex"
-                >
-                  Voor praktijken
-                </a>
-              </div>
-            </div>
-          </div>
-        </nav>
-      </header>
+      <SiteNavbar transparent />
 
       {/* Hero */}
       <section className="px-2 pb-2 pt-[72px] sm:px-3 sm:pb-3 sm:pt-[76px] lg:pt-[80px]">
@@ -533,16 +317,16 @@ export default function WieIsMijnWaarnemerHomepage() {
               {/* Content */}
               <div className="flex flex-col text-center lg:text-left">
                 <h1 className="text-[2rem] font-semibold leading-[1.1] tracking-[-0.035em] text-white sm:text-[2.4rem] md:text-[2.75rem] lg:text-[3rem] xl:text-[3.4rem]">
-                  Is uw huisartsenpraktijk gesloten?
+                  {t("heroTitle")}
                   <br />
-                  <span className="text-[#7ab0ff]">Vind hier direct uw waarnemer.</span>
+                  <span className="text-[#7ab0ff]">{t("heroHighlight")}</span>
                 </h1>
 
                 <p
                   className="mx-auto mt-4 max-w-xl text-[17px] font-medium leading-relaxed text-white sm:mt-6 sm:text-[19px] lg:mx-0"
                   style={{ textShadow: "0 1px 12px rgba(15,23,40,0.55)" }}
                 >
-                  Zoek uw huisartsenpraktijk en zie direct welke arts vandaag waarneemt.
+                  {t("heroSubtitle")}
                 </p>
 
                 <div className="mx-auto mt-8 w-full max-w-[760px] lg:mx-0">
@@ -565,7 +349,7 @@ export default function WieIsMijnWaarnemerHomepage() {
                             setNearby(null);
                           }}
                           onFocus={() => setShowDropdown(true)}
-                          placeholder="Zoek uw huisartsenpraktijk (bijv. Huisartspraktijk Milad)"
+                          placeholder={t("searchPlaceholder")}
                           className="w-full bg-transparent py-3 pr-2 text-[15px] text-[#0f1728] placeholder:text-[#9ca3af] outline-none"
                         />
                       </div>
@@ -573,7 +357,7 @@ export default function WieIsMijnWaarnemerHomepage() {
                         type="submit"
                         className="w-full shrink-0 rounded-xl bg-[#1d1d1b] px-6 py-3.5 text-[14px] font-medium text-white transition-colors duration-200 hover:bg-[#1d1d1b]/85 lg:w-auto"
                       >
-                        Zoek
+                        {t("searchButton")}
                       </button>
                     </form>
 
@@ -592,8 +376,8 @@ export default function WieIsMijnWaarnemerHomepage() {
                               </span>
                             </span>
                             <div className="flex min-w-0 flex-col">
-                              <p className="text-[13px] font-medium text-[#0f1728]">Locatie bepalen…</p>
-                              <p className="text-[11px] text-[#6b7280]">We zoeken praktijken dichtbij jou.</p>
+                              <p className="text-[13px] font-medium text-[#0f1728]">{t("locationLoading")}</p>
+                              <p className="text-[11px] text-[#6b7280]">{t("locationLoadingSub")}</p>
                             </div>
                           </div>
                         )}
@@ -607,9 +391,9 @@ export default function WieIsMijnWaarnemerHomepage() {
                             </span>
                             <div className="flex min-w-0 flex-1 flex-col gap-1">
                               <p className="text-[13px] font-medium text-[#0f1728]">{geoError}</p>
-                              {geoError.toLowerCase().includes("geweigerd") && (
+                              {geoError === t("locationDenied") && (
                                 <p className="text-[11.5px] leading-relaxed text-[#6b7280]">
-                                  Klik op het 🔒 slotje naast de URL → <span className="font-medium text-[#0f1728]">Sitevoorkeuren</span> → <span className="font-medium text-[#0f1728]">Locatie</span> → <span className="font-medium text-[#0f1728]">Toestaan</span>. Of zoek hierboven op praktijknaam.
+                                  {t("locationDeniedHelp")} <span className="font-medium text-[#0f1728]">{t("sitePreferences")}</span> → <span className="font-medium text-[#0f1728]">{t("location")}</span> → <span className="font-medium text-[#0f1728]">{t("allow")}</span>. {t("searchSuffix")}
                                 </p>
                               )}
                               <button
@@ -620,7 +404,7 @@ export default function WieIsMijnWaarnemerHomepage() {
                                 }}
                                 className="mt-1 self-start text-[11.5px] font-medium text-[#3585ff] hover:text-[#1d5fd9]"
                               >
-                                Sluiten
+                                {t("close")}
                               </button>
                             </div>
                           </div>
@@ -636,10 +420,10 @@ export default function WieIsMijnWaarnemerHomepage() {
                               </span>
                               <div className="min-w-0">
                                 <p className="text-[12.5px] font-semibold text-[#0f1728]">
-                                  Is dit jouw huisarts?
+                                  {t("nearbyTitle")}
                                 </p>
                                 <p className="text-[11px] text-[#6b7280]">
-                                  {nearby?.length} {nearby?.length === 1 ? "praktijk" : "praktijken"} dichtbij — klik om te kiezen
+                                  {t("nearbyCount", { count: nearby?.length ?? 0, label: (nearby?.length ?? 0) === 1 ? t("practiceSingular") : t("practicePlural") })}
                                 </p>
                               </div>
                             </div>
@@ -649,7 +433,7 @@ export default function WieIsMijnWaarnemerHomepage() {
                                 setNearby(null);
                                 setShowDropdown(false);
                               }}
-                              aria-label="Sluiten"
+                              aria-label={t("close")}
                               className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#6b7280] transition-colors hover:bg-black/[0.05] hover:text-[#0f1728]"
                             >
                               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round">
@@ -695,7 +479,7 @@ export default function WieIsMijnWaarnemerHomepage() {
                         )}
                         {!geoLoading && !geoError && dropdownList.length === 0 && query.trim().length >= 1 && (
                           <div className="px-4 py-3 text-[13px] text-[#6b7280]">
-                            Geen praktijken gevonden voor &ldquo;{query}&rdquo;.
+                            {t("noResults", { query })}
                           </div>
                         )}
                       </div>
@@ -722,7 +506,7 @@ export default function WieIsMijnWaarnemerHomepage() {
                       <span className="ml-1.5 text-[12px] font-semibold text-white">4.9</span>
                     </div>
                     <p className="text-[12px] text-white/75">
-                      Vertrouwd door <span className="font-semibold text-white">10.000+</span> patiënten
+                      {t("trustedBy")} <span className="font-semibold text-white">10.000+</span> {t("patients")}
                     </p>
                   </div>
                 </div>
@@ -737,7 +521,7 @@ export default function WieIsMijnWaarnemerHomepage() {
       <section className="bg-white py-20 sm:py-28 md:py-32">
         <div className="mx-auto w-full max-w-[1400px] px-4 text-center sm:px-6 lg:px-10">
           <h2 className="mx-auto mb-16 max-w-3xl text-3xl font-semibold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:mb-20 sm:text-4xl md:text-[2.75rem] lg:mb-24">
-            In 3 stappen <span className="text-[#7ab0ff]">uw waarnemer vinden.</span>
+            {t("stepsTitle")} <span className="text-[#7ab0ff]">{t("stepsHighlight")}</span>
           </h2>
 
           <div className="grid grid-cols-1 gap-12 md:grid-cols-3 md:gap-10 lg:gap-14">
@@ -765,10 +549,10 @@ export default function WieIsMijnWaarnemerHomepage() {
             {/* Links: headline */}
             <div className="lg:sticky lg:top-32 lg:self-start">
               <h2 className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:text-4xl md:text-[2.75rem]">
-                Beschikbaar in <span className="text-[#7ab0ff]">uw regio.</span>
+                {t("regionsTitle")} <span className="text-[#7ab0ff]">{t("regionsHighlight")}</span>
               </h2>
               <p className="mt-5 max-w-md text-base leading-relaxed text-gray-500 sm:text-lg">
-                {allePraktijken.length} deelnemende huisartsenpraktijken in {beschikbareSteden.length} {beschikbareSteden.length === 1 ? "stad" : "steden"}. Kies uw stad om direct alle praktijken te zien.
+                {t("regionsDescription", { count: allePraktijken.length, cities: beschikbareSteden.length, citiesLabel: beschikbareSteden.length === 1 ? t("citySingular") : t("cityPlural") })}
               </p>
             </div>
 
@@ -795,7 +579,7 @@ export default function WieIsMijnWaarnemerHomepage() {
                         {stad}
                       </h3>
                       <p className="mt-1 text-[14px] text-gray-500">
-                        {praktijkCountPerStad[stad]} deelnemende praktijken
+                        {t("practiceCount", { count: praktijkCountPerStad[stad], label: praktijkCountPerStad[stad] === 1 ? t("practiceSingular") : t("practicePlural") })}
                       </p>
                     </div>
                     <svg
@@ -817,88 +601,7 @@ export default function WieIsMijnWaarnemerHomepage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#000000] text-white">
-        <div>
-          <div className="mx-auto w-full max-w-[1400px] px-4 pt-14 sm:px-6 sm:pt-16 lg:px-10">
-            <div className="grid grid-cols-1 gap-10 pb-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-16">
-              {/* Brand */}
-              <div>
-                <a href="/" className="inline-block">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/logo.png"
-                    alt="Wieismijnwaarnemer"
-                    className="h-9 w-auto sm:h-10"
-                    style={{ filter: "brightness(0) invert(1)" }}
-                  />
-                </a>
-                <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-white/70">
-                  Vind snel welke huisartspraktijk waarneemt wanneer uw eigen huisarts afwezig is.
-                </p>
-              </div>
-
-              {/* Voor patiënten */}
-              <div>
-                <h3 className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/50">
-                  Voor patiënten
-                </h3>
-                <ul className="mt-4 space-y-3">
-                  <li>
-                    <a href="/over-ons" className="text-[15px] text-white/85 transition-colors hover:text-white">Over ons</a>
-                  </li>
-                  <li>
-                    <a href="/contact" className="text-[15px] text-white/85 transition-colors hover:text-white">Contact</a>
-                  </li>
-                  <li>
-                    <a href="/regios" className="text-[15px] text-white/85 transition-colors hover:text-white">Regio&apos;s</a>
-                  </li>
-                  <li>
-                    <a href="/helpcentrum" className="text-[15px] text-white/85 transition-colors hover:text-white">Hulpcentrum</a>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Voor huisartspraktijken */}
-              <div>
-                <h3 className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/50">
-                  Voor huisartspraktijken
-                </h3>
-                <ul className="mt-4 space-y-3">
-                  <li>
-                    <a
-                      href="/aanmelden"
-                      className="inline-flex items-center gap-2 text-[15px] font-semibold text-white transition-colors hover:text-white/90"
-                    >
-                      Praktijk aanmelden
-                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M5 12h14M13 5l7 7-7 7" />
-                      </svg>
-                    </a>
-                  </li>
-                  <li>
-                    <a href="/voor-praktijken" className="text-[15px] text-white/85 transition-colors hover:text-white">Voor praktijken</a>
-                  </li>
-                  <li>
-                    <a href="/portaal" className="text-[15px] text-white/85 transition-colors hover:text-white">Praktijkpagina beheren</a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <hr className="m-0 border-white/15" />
-
-            <div className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
-              <p className="max-w-2xl text-[12px] leading-relaxed text-white/55">
-                Let op: controleer bij twijfel altijd rechtstreeks bij uw huisartsenpraktijk of de waarnemer. Bij spoed belt u <span className="text-white/80">112</span> of de <span className="text-white/80">huisartsenpost</span> in uw regio.
-              </p>
-              <p className="shrink-0 text-[12px] text-white/40">
-                © 2026 Wieismijnwaarnemer
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

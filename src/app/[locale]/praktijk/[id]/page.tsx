@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import {
   allePraktijken,
   getPraktijkDetails,
@@ -11,27 +12,9 @@ import SiteNavbar from "@/components/SiteNavbar";
 import SiteFooter from "@/components/SiteFooter";
 import PraktijkStatusBadge from "@/components/PraktijkStatusBadge";
 
-const DAY_LABELS: Record<DayKey, string> = {
-  ma: "Maandag",
-  di: "Dinsdag",
-  wo: "Woensdag",
-  do: "Donderdag",
-  vr: "Vrijdag",
-  za: "Zaterdag",
-  zo: "Zondag",
-};
-const DAY_SHORT: Record<DayKey, string> = {
-  ma: "Ma",
-  di: "Di",
-  wo: "Wo",
-  do: "Do",
-  vr: "Vr",
-  za: "Za",
-  zo: "Zo",
-};
 const DAY_ORDER: DayKey[] = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 
-function CompactWeekStrip({ schedule }: { schedule: WeekSchedule }) {
+function CompactWeekStrip({ schedule, dayShort }: { schedule: WeekSchedule; dayShort: Record<DayKey, string> }) {
   return (
     <div className="grid grid-cols-7 gap-1">
       {DAY_ORDER.map((d) => {
@@ -49,7 +32,7 @@ function CompactWeekStrip({ schedule }: { schedule: WeekSchedule }) {
                 closed ? "text-gray-400" : "text-[#1f8c4e]"
               }`}
             >
-              {DAY_SHORT[d]}
+              {dayShort[d]}
             </span>
             <span
               className={`text-[9.5px] tabular-nums leading-tight ${
@@ -75,9 +58,13 @@ function CompactWeekStrip({ schedule }: { schedule: WeekSchedule }) {
 function WeekScheduleView({
   schedule,
   accent = "neutral",
+  dayLabels,
+  closedLabel,
 }: {
   schedule: WeekSchedule;
   accent?: "neutral" | "green";
+  dayLabels: Record<DayKey, string>;
+  closedLabel: string;
 }) {
   const bar =
     accent === "green"
@@ -99,14 +86,14 @@ function WeekScheduleView({
                   closed ? "bg-gray-300" : bar
                 }`}
               />
-              {DAY_LABELS[d]}
+              {dayLabels[d]}
             </dt>
             <dd
               className={`text-[12.5px] tabular-nums ${
                 closed ? "text-gray-400" : "font-semibold text-gray-900"
               }`}
             >
-              {closed ? "Gesloten" : `${hours!.van} – ${hours!.tot}`}
+              {closed ? closedLabel : `${hours!.van} – ${hours!.tot}`}
             </dd>
           </div>
         );
@@ -175,6 +162,17 @@ export default async function PraktijkDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const t = await getTranslations("praktijk");
+  const tDays = await getTranslations("days");
+  const dayLabels: Record<DayKey, string> = {
+    ma: tDays("ma"), di: tDays("di"), wo: tDays("wo"), do: tDays("do"),
+    vr: tDays("vr"), za: tDays("za"), zo: tDays("zo"),
+  };
+  const dayShort: Record<DayKey, string> = {
+    ma: tDays("maShort"), di: tDays("diShort"), wo: tDays("woShort"), do: tDays("doShort"),
+    vr: tDays("vrShort"), za: tDays("zaShort"), zo: tDays("zoShort"),
+  };
+
   const praktijk = getPraktijkDetails(id);
   if (!praktijk) notFound();
 
@@ -207,7 +205,7 @@ export default async function PraktijkDetailPage({
           >
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          Terug naar zoeken
+          {t("backToSearch")}
         </Link>
 
         {/* Praktijk hoofd-card */}
@@ -228,7 +226,7 @@ export default async function PraktijkDetailPage({
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-gray-500">
                   <span className="h-2 w-2 rounded-full bg-gray-400" />
-                  Openingstijden onbekend
+                  {t("unknownHours")}
                 </span>
               )}
             </div>
@@ -326,7 +324,7 @@ export default async function PraktijkDetailPage({
                     <circle cx="12" cy="12" r="10" />
                     <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                   </svg>
-                  Website
+                  {t("websiteButton")}
                 </a>
               )}
             </div>
@@ -336,7 +334,7 @@ export default async function PraktijkDetailPage({
         {/* Waarnemers */}
         {waarnemers.length === 0 ? (
           <section className="mt-8 rounded-2xl border border-black/[0.06] bg-white p-6 text-center text-[14px] text-gray-500 sm:mt-10">
-            Deze praktijk heeft (nog) geen waarnemers opgegeven.
+            {t("waarnemerNone")}
           </section>
         ) : (
           <>
@@ -358,10 +356,10 @@ export default async function PraktijkDetailPage({
                 </span>
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#1f8c4e]">
-                    Eerstvolgende waarnemer
+                    {t("waarnemerPrimary")}
                   </p>
                   <p className="text-[12px] text-gray-500">
-                    Ga nu direct naar deze praktijk.
+                    {t("waarnemerDesc")}
                   </p>
                 </div>
               </div>
@@ -492,11 +490,13 @@ export default async function PraktijkDetailPage({
                     {w.weekSchedule && (
                       <div className="border-t border-gray-100 px-6 py-6 sm:px-8">
                         <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-500">
-                          Openingstijden
+                          {t("openingHoursTitle")}
                         </p>
                         <WeekScheduleView
                           schedule={w.weekSchedule}
                           accent="green"
+                          dayLabels={dayLabels}
+                          closedLabel={t("closed")}
                         />
                       </div>
                     )}
@@ -539,7 +539,7 @@ export default async function PraktijkDetailPage({
                         >
                           <polygon points="3 11 22 2 13 21 11 13 3 11" />
                         </svg>
-                        Route via Google Maps
+                        {t("routeButton")}
                       </a>
                     </div>
                   </div>
@@ -556,7 +556,7 @@ export default async function PraktijkDetailPage({
                       Ook gesloten? Probeer dan:
                     </h2>
                     <p className="mt-1 text-[13px] text-gray-500">
-                      Reserve-waarnemers in volgorde van voorkeur.
+                      {t("waarnemerReserve")}
                     </p>
                   </div>
                 </div>
@@ -575,7 +575,7 @@ export default async function PraktijkDetailPage({
                           {/* Rank label strip */}
                           <div className="flex items-center justify-between gap-2 border-b border-gray-100 bg-[#fafbfc] px-5 py-2.5 sm:px-6">
                             <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-400">
-                              Reserve {rank - 1}
+                              {t("waarnemerReserve")} {rank - 1}
                             </span>
                             {w.weekSchedule && (
                               <PraktijkStatusBadge
@@ -672,7 +672,7 @@ export default async function PraktijkDetailPage({
                                 >
                                   <polygon points="3 11 22 2 13 21 11 13 3 11" />
                                 </svg>
-                                Route
+                                {t("waarnemerRoute")}
                               </a>
                             </div>
                           </div>
@@ -682,7 +682,7 @@ export default async function PraktijkDetailPage({
                               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-gray-400">
                                 Deze week
                               </p>
-                              <CompactWeekStrip schedule={w.weekSchedule} />
+                              <CompactWeekStrip schedule={w.weekSchedule} dayShort={dayShort} />
                             </div>
                           )}
                         </li>

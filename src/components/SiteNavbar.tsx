@@ -1,18 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-type LangCode =
-  | "tr"
-  | "pl"
-  | "ar-sy"
-  | "ar-ma"
-  | "fa-af"
-  | "so"
-  | "uk"
-  | "ru"
-  | "nl"
-  | "en";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter, usePathname } from "@/i18n/navigation";
+import { type Locale } from "@/i18n/routing";
 
 function FlagIcon({ code }: { code: string }) {
   const content = (() => {
@@ -93,15 +84,31 @@ function FlagIcon({ code }: { code: string }) {
   );
 }
 
+// NL first, EN second, rest alphabetical by label
+const langs: { code: Locale; label: string }[] = [
+  { code: "nl", label: "Nederlands" },
+  { code: "en", label: "English" },
+  { code: "fa-af", label: "Afghaans (دری)" },
+  { code: "ar-ma", label: "Marokkaans (العربية)" },
+  { code: "pl", label: "Polski" },
+  { code: "ru", label: "Русский" },
+  { code: "so", label: "Soomaali" },
+  { code: "ar-sy", label: "Syrisch (العربية)" },
+  { code: "tr", label: "Türkçe" },
+  { code: "uk", label: "Українська" },
+];
+
 export default function SiteNavbar({
   transparent = false,
 }: {
-  /** Als true: navbar begint transparant (voor hero-pagina's met donkere achtergrond). Default: false (bv. detailpagina's). */
   transparent?: boolean;
 }) {
+  const locale = useLocale();
+  const pathname = usePathname();
+  const router = useRouter();
+  const t = useTranslations("nav");
   const [scrolled, setScrolled] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
-  const [currentLang, setCurrentLang] = useState<LangCode>("nl");
   const langRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -129,19 +136,12 @@ export default function SiteNavbar({
     };
   }, []);
 
-  const langs: { code: LangCode; label: string }[] = [
-    { code: "tr", label: "Türkçe" },
-    { code: "pl", label: "Polski" },
-    { code: "ar-sy", label: "Syrisch" },
-    { code: "ar-ma", label: "Marokkaans" },
-    { code: "fa-af", label: "Afghaans" },
-    { code: "so", label: "Soomaali" },
-    { code: "uk", label: "Українська" },
-    { code: "ru", label: "Русский" },
-    { code: "nl", label: "Nederlands" },
-    { code: "en", label: "English" },
-  ];
-  const current = langs.find((l) => l.code === currentLang)!;
+  const switchLocale = (newLocale: Locale) => {
+    router.replace(pathname, { locale: newLocale });
+    setLangOpen(false);
+  };
+
+  const current = langs.find((l) => l.code === locale) ?? langs[0];
   const shortCode = current.code.includes("-")
     ? current.code.split("-")[1].toUpperCase()
     : current.code.toUpperCase();
@@ -205,19 +205,16 @@ export default function SiteNavbar({
                   <div className="absolute right-0 top-full z-50 pt-2 animate-[dropdownIn_160ms_ease-out]">
                     <div className="w-[280px] rounded-xl border border-[#e5e5e5] bg-white p-5 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
                       <p className="mb-3 text-[13px] font-medium text-[#1d1d1b]">
-                        Kies je taal
+                        {t("chooseLang")}
                       </p>
                       <div className="flex flex-col gap-1">
                         {langs.map((l) => {
-                          const active = l.code === currentLang;
+                          const active = l.code === locale;
                           return (
                             <button
                               key={l.code}
                               type="button"
-                              onClick={() => {
-                                setCurrentLang(l.code);
-                                setLangOpen(false);
-                              }}
+                              onClick={() => switchLocale(l.code)}
                               className={`flex items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors ${
                                 active
                                   ? "bg-[#f5f5f5]"
@@ -247,7 +244,7 @@ export default function SiteNavbar({
                 href="/aanmelden"
                 className="hidden items-center justify-center rounded-lg bg-[#1d1d1b] px-5 py-3 text-[14px] font-medium text-white transition-colors duration-200 hover:bg-[#1d1d1b]/85 sm:inline-flex"
               >
-                Voor praktijken
+                {t("forPractices")}
               </a>
             </div>
           </div>

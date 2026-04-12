@@ -1,4 +1,10 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 export default function SiteFooter() {
+  const t = useTranslations("footer");
+
   return (
     <footer className="bg-[#000000] text-white">
       <div>
@@ -16,15 +22,14 @@ export default function SiteFooter() {
                 />
               </a>
               <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-white/70">
-                Vind snel welke huisartspraktijk waarneemt wanneer uw eigen
-                huisarts afwezig is.
+                {t("description")}
               </p>
             </div>
 
             {/* Voor patiënten */}
             <div>
               <h3 className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/50">
-                Voor patiënten
+                {t("forPatients")}
               </h3>
               <ul className="mt-4 space-y-3">
                 <li>
@@ -32,7 +37,7 @@ export default function SiteFooter() {
                     href="/over-ons"
                     className="text-[15px] text-white/85 transition-colors hover:text-white"
                   >
-                    Over ons
+                    {t("aboutUs")}
                   </a>
                 </li>
                 <li>
@@ -40,7 +45,7 @@ export default function SiteFooter() {
                     href="/contact"
                     className="text-[15px] text-white/85 transition-colors hover:text-white"
                   >
-                    Contact
+                    {t("contact")}
                   </a>
                 </li>
                 <li>
@@ -48,7 +53,7 @@ export default function SiteFooter() {
                     href="/regios"
                     className="text-[15px] text-white/85 transition-colors hover:text-white"
                   >
-                    Regio&apos;s
+                    {t("regions")}
                   </a>
                 </li>
                 <li>
@@ -56,7 +61,7 @@ export default function SiteFooter() {
                     href="/helpcentrum"
                     className="text-[15px] text-white/85 transition-colors hover:text-white"
                   >
-                    Hulpcentrum
+                    {t("helpCenter")}
                   </a>
                 </li>
               </ul>
@@ -65,7 +70,7 @@ export default function SiteFooter() {
             {/* Voor huisartspraktijken */}
             <div>
               <h3 className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/50">
-                Voor huisartspraktijken
+                {t("forPractices")}
               </h3>
               <ul className="mt-4 space-y-3">
                 <li>
@@ -73,7 +78,7 @@ export default function SiteFooter() {
                     href="/aanmelden"
                     className="inline-flex items-center gap-2 text-[15px] font-semibold text-white transition-colors hover:text-white/90"
                   >
-                    Praktijk aanmelden
+                    {t("registerPractice")}
                     <svg
                       className="h-3.5 w-3.5"
                       viewBox="0 0 24 24"
@@ -92,7 +97,7 @@ export default function SiteFooter() {
                     href="/voor-praktijken"
                     className="text-[15px] text-white/85 transition-colors hover:text-white"
                   >
-                    Voor praktijken
+                    {t("forPracticesLink")}
                   </a>
                 </li>
                 <li>
@@ -100,7 +105,7 @@ export default function SiteFooter() {
                     href="/portaal"
                     className="text-[15px] text-white/85 transition-colors hover:text-white"
                   >
-                    Praktijkpagina beheren
+                    {t("managePage")}
                   </a>
                 </li>
               </ul>
@@ -111,13 +116,17 @@ export default function SiteFooter() {
 
           <div className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
             <p className="max-w-2xl text-[12px] leading-relaxed text-white/55">
-              Let op: controleer bij twijfel altijd rechtstreeks bij uw
-              huisartsenpraktijk of de waarnemer. Bij spoed belt u{" "}
-              <span className="text-white/80">112</span> of de{" "}
-              <span className="text-white/80">huisartsenpost</span> in uw regio.
+              {t.rich("disclaimer", {
+                emergency: (chunks) => (
+                  <span className="text-white/80">{chunks}</span>
+                ),
+                postTitle: (chunks) => (
+                  <span className="text-white/80">{chunks}</span>
+                ),
+              })}
             </p>
             <p className="shrink-0 text-[12px] text-white/40">
-              © 2026 Wieismijnwaarnemer
+              {t("copyright")}
             </p>
           </div>
         </div>

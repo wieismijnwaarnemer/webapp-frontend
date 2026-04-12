@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { praktijken } from "@/data/praktijken";
 
 function slugify(s: string) {
@@ -19,8 +20,16 @@ export function generateStaticParams() {
   return steden.map((stad) => ({ regio: slugify(stad) }));
 }
 
-export default function RegioPage({ params }: { params: { regio: string } }) {
-  const stad = steden.find((s) => slugify(s) === params.regio);
+export default async function RegioPage({
+  params,
+}: {
+  params: Promise<{ regio: string; locale: string }>;
+}) {
+  const { regio } = await params;
+  const t = await getTranslations("regio");
+  const tHome = await getTranslations("home");
+
+  const stad = steden.find((s) => slugify(s) === regio);
   if (!stad) return notFound();
 
   const lijst = praktijken.filter((p) => p.stad === stad);
@@ -33,17 +42,23 @@ export default function RegioPage({ params }: { params: { regio: string } }) {
             href="/"
             className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#3585ff] hover:underline"
           >
-            ← Terug naar zoeken
+            {t("backToSearch")}
           </Link>
         </div>
       </div>
 
       <div className="mx-auto w-full max-w-[1400px] px-4 py-12 sm:px-6 lg:px-10">
         <h1 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.02em] text-gray-900 sm:text-[32px] md:text-[36px]">
-          Huisartsen in <span className="text-[#7ab0ff]">{stad}.</span>
+          {t("title")} <span className="text-[#7ab0ff]">{stad}.</span>
         </h1>
         <p className="mt-3 text-[15px] text-gray-500 sm:text-base">
-          {lijst.length} deelnemende {lijst.length === 1 ? "praktijk" : "praktijken"}.
+          {t("count", {
+            count: lijst.length,
+            label:
+              lijst.length === 1
+                ? tHome("practiceSingular")
+                : tHome("practicePlural"),
+          })}
         </p>
 
         <ul className="mt-10 divide-y divide-gray-100 border-y border-gray-100">
