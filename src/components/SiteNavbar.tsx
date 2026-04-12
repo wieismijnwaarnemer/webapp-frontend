@@ -71,6 +71,56 @@ function FlagIcon({ code }: { code: string }) {
             <rect y="10.667" width="16" height="5.333" fill="#D52B1E" />
           </>
         );
+      case "de":
+        return (
+          <>
+            <rect width="16" height="5.333" fill="#000000" />
+            <rect y="5.333" width="16" height="5.334" fill="#DD0000" />
+            <rect y="10.667" width="16" height="5.333" fill="#FFCC00" />
+          </>
+        );
+      case "fr":
+        return (
+          <>
+            <rect width="5.333" height="16" fill="#002395" />
+            <rect x="5.333" width="5.334" height="16" fill="#FFFFFF" />
+            <rect x="10.667" width="5.333" height="16" fill="#ED2939" />
+          </>
+        );
+      case "es":
+        return (
+          <>
+            <rect width="16" height="4" fill="#AA151B" />
+            <rect y="4" width="16" height="8" fill="#F1BF00" />
+            <rect y="12" width="16" height="4" fill="#AA151B" />
+          </>
+        );
+      case "nl-be":
+        return (
+          <>
+            <rect width="5.333" height="16" fill="#000000" />
+            <rect x="5.333" width="5.334" height="16" fill="#FAE042" />
+            <rect x="10.667" width="5.333" height="16" fill="#ED2939" />
+          </>
+        );
+      case "nl-sr":
+        return (
+          <>
+            <rect width="16" height="3.2" fill="#377E3F" />
+            <rect y="3.2" width="16" height="1.6" fill="#FFFFFF" />
+            <rect y="4.8" width="16" height="6.4" fill="#B40A2D" />
+            <rect y="11.2" width="16" height="1.6" fill="#FFFFFF" />
+            <rect y="12.8" width="16" height="3.2" fill="#377E3F" />
+          </>
+        );
+      case "pap":
+        return (
+          <>
+            <rect width="16" height="16" fill="#002B7F" />
+            <rect y="6" width="16" height="4" fill="#F9E814" />
+            <rect y="10" width="16" height="6" fill="#CC0000" />
+          </>
+        );
       default:
         return <rect width="16" height="16" fill="#e5e5e5" />;
     }
@@ -90,13 +140,19 @@ const langs: { code: Locale; label: string }[] = [
   { code: "nl", label: "Nederlands" },
   { code: "en", label: "English" },
   { code: "fa-af", label: "Afghaans (دری)" },
+  { code: "de", label: "Deutsch" },
+  { code: "es", label: "Español" },
+  { code: "fr", label: "Français" },
   { code: "ar-ma", label: "Marokkaans (العربية)" },
+  { code: "pap", label: "Papiamentu" },
   { code: "pl", label: "Polski" },
   { code: "ru", label: "Русский" },
   { code: "so", label: "Soomaali" },
+  { code: "nl-sr", label: "Surinaams" },
   { code: "ar-sy", label: "Syrisch (العربية)" },
   { code: "tr", label: "Türkçe" },
   { code: "uk", label: "Українська" },
+  { code: "nl-be", label: "Vlaams" },
 ];
 
 export default function SiteNavbar({

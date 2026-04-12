@@ -33,6 +33,27 @@ const LANG_MAP: Record<string, Locale> = {
   "uk-ua": "uk",
   // Russian
   "ru-ru": "ru",
+  // German
+  de: "de",
+  "de-de": "de",
+  "de-at": "de",
+  "de-ch": "de",
+  // French
+  fr: "fr",
+  "fr-fr": "fr",
+  "fr-be": "fr",
+  "fr-ch": "fr",
+  // Spanish
+  es: "es",
+  "es-es": "es",
+  "es-mx": "es",
+  "es-ar": "es",
+  // Flemish / Belgian Dutch
+  "nl-be": "nl-be",
+  // Surinamese Dutch
+  "nl-sr": "nl-sr",
+  // Papiamento
+  pap: "pap",
 };
 
 function resolveLocale(acceptLang: string | null): Locale | null {
