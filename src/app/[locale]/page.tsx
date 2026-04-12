@@ -674,12 +674,11 @@ export default function WieIsMijnWaarnemerHomepage() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-3 rounded-xl bg-white px-6 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.15)] transition-all hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/logo.svg"
-                      alt="Thuisarts.nl"
-                      className="h-8 w-auto sm:h-10"
-                    />
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                      <circle cx="12" cy="12" r="12" fill="#023729"/>
+                      <path d="M12 6v12M6 12h12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                    </svg>
+                    <span className="text-xl font-bold text-[#023729] sm:text-2xl">Thuisarts.nl</span>
                   </a>
                   <p className="mt-3 text-xs text-white/40">Klik om naar Thuisarts.nl te gaan</p>
                 </div>
