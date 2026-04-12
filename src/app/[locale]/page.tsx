@@ -691,43 +691,54 @@ export default function WieIsMijnWaarnemerHomepage() {
       {/* Regio's */}
       <section className="bg-white py-20 sm:py-28 md:py-32">
         <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
-          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-20">
-            {/* Links: headline */}
-            <div className="lg:sticky lg:top-32 lg:self-start">
+          <div>
+            <div className="mx-auto max-w-3xl text-center">
               <h2 className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:text-4xl md:text-[2.75rem]">
                 {t("regionsTitle")} <span className="text-[#7ab0ff]">{t("regionsHighlight")}</span>
               </h2>
-              <p className="mt-5 max-w-md text-base leading-relaxed text-gray-500 sm:text-lg">
+              <p className="mt-5 text-base leading-relaxed text-gray-500 sm:text-lg">
                 {t("regionsDescription", { count: allePraktijken.length, cities: beschikbareSteden.length, citiesLabel: beschikbareSteden.length === 1 ? t("citySingular") : t("cityPlural") })}
               </p>
+
+              {/* Stats */}
+              <div className="mx-auto mt-10 grid max-w-xl grid-cols-2 gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl border border-gray-100 bg-[#f8fafc] p-5">
+                  <p className="text-[28px] font-bold tracking-tight text-[#3585ff]">{allePraktijken.length}</p>
+                  <p className="mt-1 text-[13px] text-gray-500">{t("practicePlural")}</p>
+                </div>
+                <div className="rounded-2xl border border-gray-100 bg-[#f8fafc] p-5">
+                  <p className="text-[28px] font-bold tracking-tight text-[#3585ff]">{beschikbareSteden.length}</p>
+                  <p className="mt-1 text-[13px] text-gray-500">{t("cityPlural")}</p>
+                </div>
+                <div className="rounded-2xl border border-gray-100 bg-[#f8fafc] p-5 col-span-2 sm:col-span-1">
+                  <p className="text-[28px] font-bold tracking-tight text-[#3585ff]">24/7</p>
+                  <p className="mt-1 text-[13px] text-gray-500">{t("usp2")}</p>
+                </div>
+              </div>
+
+              {/* Top steden */}
+              <div className="mt-8 flex flex-wrap justify-center gap-2">
+                {beschikbareSteden
+                  .sort((a, b) => (praktijkCountPerStad[b] ?? 0) - (praktijkCountPerStad[a] ?? 0))
+                  .slice(0, 12)
+                  .map((stad) => (
+                    <button
+                      key={stad}
+                      type="button"
+                      onClick={() => pickStad(stad)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[12.5px] font-medium text-gray-700 transition-all hover:border-[#3585ff] hover:bg-[#eef4ff] hover:text-[#3585ff]"
+                    >
+                      <svg className="h-3 w-3 text-[#3585ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      {stad}
+                      <span className="text-gray-400">{praktijkCountPerStad[stad]}</span>
+                    </button>
+                  ))}
+              </div>
             </div>
 
-            {/* Rechts: stedenlijst (compact grid) */}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {beschikbareSteden.map((stad) => (
-                <button
-                  key={stad}
-                  type="button"
-                  onClick={() => pickStad(stad)}
-                  className="group flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-[#eef4ff]"
-                >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#eef4ff] text-[#3585ff] transition-colors group-hover:bg-[#3585ff] group-hover:text-white">
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-gray-900 transition-colors group-hover:text-[#3585ff]">
-                      {stad}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {t("practiceCount", { count: praktijkCountPerStad[stad], label: praktijkCountPerStad[stad] === 1 ? t("practiceSingular") : t("practicePlural") })}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </section>
