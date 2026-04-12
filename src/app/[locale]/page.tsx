@@ -674,11 +674,12 @@ export default function WieIsMijnWaarnemerHomepage() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-3 rounded-xl bg-white px-6 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.15)] transition-all hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
                   >
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-                      <circle cx="12" cy="12" r="12" fill="#023729"/>
-                      <path d="M12 6v12M6 12h12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-                    </svg>
-                    <span className="text-xl font-bold text-[#023729] sm:text-2xl">Thuisarts.nl</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/logo.svg"
+                      alt="Thuisarts.nl"
+                      className="h-8 w-auto sm:h-10"
+                    />
                   </a>
                   <p className="mt-3 text-xs text-white/40">Klik om naar Thuisarts.nl te gaan</p>
                 </div>
@@ -702,47 +703,32 @@ export default function WieIsMijnWaarnemerHomepage() {
               </p>
             </div>
 
-            {/* Rechts: stedenlijst */}
-            <ul className="flex flex-col">
-              {beschikbareSteden.map((stad, i) => (
-                <li
+            {/* Rechts: stedenlijst (compact grid) */}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {beschikbareSteden.map((stad) => (
+                <button
                   key={stad}
-                  className={i !== 0 ? "border-t border-gray-100" : ""}
+                  type="button"
+                  onClick={() => pickStad(stad)}
+                  className="group flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-[#eef4ff]"
                 >
-                  <button
-                    type="button"
-                    onClick={() => pickStad(stad)}
-                    className="group flex w-full items-center gap-5 py-6 text-left transition-colors sm:gap-6 sm:py-7"
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#eef4ff] text-[#3585ff] transition-colors group-hover:bg-[#3585ff] group-hover:text-white">
-                      <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                        <circle cx="12" cy="10" r="3" />
-                      </svg>
-                    </span>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 transition-colors group-hover:text-[#3585ff] sm:text-xl">
-                        {stad}
-                      </h3>
-                      <p className="mt-1 text-[14px] text-gray-500">
-                        {t("practiceCount", { count: praktijkCountPerStad[stad], label: praktijkCountPerStad[stad] === 1 ? t("practiceSingular") : t("practicePlural") })}
-                      </p>
-                    </div>
-                    <svg
-                      className="h-5 w-5 shrink-0 text-gray-300 transition-all group-hover:translate-x-0.5 group-hover:text-[#3585ff]"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M5 12h14M13 5l7 7-7 7" />
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#eef4ff] text-[#3585ff] transition-colors group-hover:bg-[#3585ff] group-hover:text-white">
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
                     </svg>
-                  </button>
-                </li>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-900 transition-colors group-hover:text-[#3585ff]">
+                      {stad}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {t("practiceCount", { count: praktijkCountPerStad[stad], label: praktijkCountPerStad[stad] === 1 ? t("practiceSingular") : t("practicePlural") })}
+                    </p>
+                  </div>
+                </button>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
       </section>
