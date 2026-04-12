@@ -17,7 +17,7 @@ const steden = Array.from(new Set(praktijken.map((p) => p.stad))).sort(
 );
 
 export function generateStaticParams() {
-  return steden.map((stad) => ({ regio: slugify(stad) }));
+  return steden.map((stad) => ({ locale: "nl", regio: slugify(stad) }));
 }
 
 export default async function RegioPage({

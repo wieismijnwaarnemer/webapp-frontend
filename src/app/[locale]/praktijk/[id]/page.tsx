@@ -103,7 +103,7 @@ function WeekScheduleView({
 }
 
 export function generateStaticParams() {
-  return allePraktijken.map((p) => ({ id: p.id }));
+  return allePraktijken.map((p) => ({ locale: "nl", id: p.id }));
 }
 
 function mapsDirectionsUrl(p: PraktijkDetails) {
