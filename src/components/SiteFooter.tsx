@@ -94,14 +94,6 @@ export default function SiteFooter() {
                 </li>
                 <li>
                   <a
-                    href="/voor-praktijken"
-                    className="text-[15px] text-white/85 transition-colors hover:text-white"
-                  >
-                    {t("forPracticesLink")}
-                  </a>
-                </li>
-                <li>
-                  <a
                     href="/portaal"
                     className="text-[15px] text-white/85 transition-colors hover:text-white"
                   >
